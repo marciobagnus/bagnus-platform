@@ -4,6 +4,10 @@ import { registerCustomer } from "../../../modules/customers/application/registe
 
 import { PrismaCustomerRepository } from "../../../modules/customers/infrastructure/prisma-customer-repository";
 
+import { searchCustomers } from "../../../modules/customers/application/search-customers";
+
+import { PrismaCustomerSearchRepository } from "../../../modules/customers/infrastructure/prisma-customer-search-repository";
+
 export async function POST(request: Request) {
 
   // Temporal: esta API no estará disponible
@@ -127,5 +131,69 @@ export async function POST(request: Request) {
       { error: "No se pudo registrar el cliente." },
       { status: 500 },
     );
+  }
+}
+
+export async function GET(request: Request) {
+
+  // Temporal: búsqueda disponible solamente
+  // durante el desarrollo local.
+  // Antes del despliegue se necesitará autenticación
+  // y autorización para usuarios internos.
+
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json(
+      { error: "Endpoint no disponible." },
+      { status: 403 },
+    );
+  }
+
+  const url = new URL(request.url);
+
+  const query = url.searchParams.get("search") ?? "";
+
+  const normalizedQuery = query.trim();
+
+  if (
+    normalizedQuery.length < 2 ||
+    normalizedQuery.length > 100
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "La búsqueda debe contener entre 2 y 100 caracteres.",
+      },
+      { status: 400 },
+    );
+  }
+
+  try {
+
+    const repository =
+      new PrismaCustomerSearchRepository();
+
+    const customers = await searchCustomers(
+      normalizedQuery,
+      repository,
+    );
+
+    return NextResponse.json(customers, {
+      status: 200,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Error al buscar clientes:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        error: "No se pudo realizar la búsqueda.",
+      },
+      { status: 500 },
+    );
+
   }
 }
