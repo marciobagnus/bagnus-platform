@@ -34,3 +34,46 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Bagnus Platform — MVP
+
+Sistema de gestión de reparaciones.
+
+### Stack
+
+Next.js, TypeScript, PostgreSQL y Prisma.
+
+### Arquitectura
+
+Monolito modular con separación Clean/Hexagonal.
+Una sola aplicación; sin microservicios para el MVP.
+
+### Módulos iniciales
+
+- customers: clientes.
+- machines: máquinas y su relación con el cliente.
+- repairs: órdenes, historial de estados, presupuestos
+  y cargos de diagnóstico.
+
+InternalUser se incorporará al abordar identidad y acceso.
+
+### Organización del código
+
+- src/app: páginas y puntos de entrada de Next.js.
+- src/modules/<modulo>/domain: reglas del negocio.
+- src/modules/<modulo>/application: casos de uso.
+- src/modules/<modulo>/infrastructure: persistencia e integraciones.
+
+El dominio no depende de Next.js ni de Prisma.
+Las carpetas y abstracciones se crean cuando se necesitan.
+
+### Reglas acordadas
+
+- Una máquina no puede tener dos reparaciones abiertas simultáneamente.
+- Cada nuevo ingreso físico genera una nueva RepairOrder.
+- La misma Machine se reutiliza entre reparaciones.
+- Cada cambio de estado registra el usuario interno responsable.
+- El cliente consulta, pero no modifica.
+- Identificadores internos UUID.
+- Dinero representado con Decimal.
+- Timestamps en UTC.
