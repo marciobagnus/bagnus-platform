@@ -39,6 +39,56 @@ model Machine {
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
+  repairOrders RepairOrder[]
+
   @@index([customerId])
   @@map("machines")
+}
+
+enum RepairStatus {
+  RECEIVED
+  DIAGNOSING
+  WAITING_APPROVAL
+  IN_REPAIR
+  READY_FOR_PICKUP
+  DELIVERED
+  CANCELLED
+}
+
+model RepairOrder {
+  id        String @id @db.Uuid
+  machineId String @db.Uuid
+
+  reportedIssue       String
+  receivedAccessories String?
+
+  status RepairStatus @default(RECEIVED)
+
+  receivedAt DateTime
+  createdAt  DateTime
+  updatedAt  DateTime
+
+  machine Machine @relation(fields: [machineId], references: [id], onDelete: Restrict)
+
+  statusHistory RepairStatusHistory[]
+
+  @@index([machineId])
+  @@index([status])
+  @@map("repair_orders")
+}
+
+model RepairStatusHistory {
+  id            String @id @db.Uuid
+  repairOrderId String @db.Uuid
+
+  fromStatus RepairStatus?
+  toStatus   RepairStatus
+
+  note      String?
+  changedAt DateTime
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Restrict)
+
+  @@index([repairOrderId, changedAt])
+  @@map("repair_status_history")
 }
