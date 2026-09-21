@@ -20,5 +20,25 @@ model Customer {
   createdAt DateTime
   updatedAt DateTime
 
+  machines Machine[]
+
   @@map("customers")
+}
+
+model Machine {
+  id         String @id @db.Uuid
+  customerId String @db.Uuid
+
+  brand        String
+  type         String
+  model        String?
+  serialNumber String?
+
+  createdAt DateTime
+  updatedAt DateTime
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@map("machines")
 }
