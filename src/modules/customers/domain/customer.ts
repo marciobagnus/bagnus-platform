@@ -1,7 +1,11 @@
 export type Customer = {
   id: string;
   name: string;
+  lastName: string;
+  dni: string;
   phone: string;
+  email: string | null;
+  address: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -9,26 +13,72 @@ export type Customer = {
 type CreateCustomerInput = {
   id: string;
   name: string;
+  lastName: string;
+  dni: string;
   phone: string;
+  email?: string | null;
+  address?: string | null;
   now: Date;
 };
 
-export function createCustomer(input: CreateCustomerInput): Customer {
+export function createCustomer(
+  input: CreateCustomerInput,
+): Customer {
   const name = input.name.trim();
+  const lastName = input.lastName.trim();
+
+  // Normalizamos el DNI eliminando espacios y puntos.
+  const dni = input.dni.replace(/[\s.]/g, "");
+
   const phone = input.phone.trim();
 
+  const email =
+    input.email?.trim().toLowerCase() || null;
+
+  const address =
+    input.address?.trim() || null;
+
   if (name.length === 0) {
-    throw new Error("El nombre del cliente es obligatorio.");
+    throw new Error(
+      "El nombre del cliente es obligatorio.",
+    );
+  }
+
+  if (lastName.length === 0) {
+    throw new Error(
+      "El apellido del cliente es obligatorio.",
+    );
+  }
+
+  if (!/^\d+$/.test(dni)) {
+    throw new Error(
+      "El DNI debe contener únicamente números.",
+    );
   }
 
   if (phone.length === 0) {
-    throw new Error("El teléfono del cliente es obligatorio.");
+    throw new Error(
+      "El teléfono del cliente es obligatorio.",
+    );
+  }
+
+  if (
+    email !== null &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    throw new Error(
+      "El correo electrónico no es válido.",
+    );
   }
 
   return {
     id: input.id,
     name,
+    lastName,
+    dni,
     phone,
+    email,
+    address,
     createdAt: input.now,
     updatedAt: input.now,
   };

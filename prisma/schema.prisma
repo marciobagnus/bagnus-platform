@@ -8,9 +8,15 @@ datasource db {
 }
 
 model Customer {
-  id        String   @id @db.Uuid
-  name      String
-  phone     String
+  id String @id @db.Uuid
+
+  name     String
+  lastName String?
+  dni      String? @unique
+  phone    String  @unique
+  email    String?
+  address  String?
+
   createdAt DateTime
   updatedAt DateTime
 

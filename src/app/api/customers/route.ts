@@ -6,9 +6,8 @@ import { PrismaCustomerRepository } from "../../../modules/customers/infrastruct
 
 export async function POST(request: Request) {
 
-  // Temporal: bloquear este endpoint fuera de desarrollo.
-  // Antes de habilitarlo en producción, implementar
-  // autenticación y autorización de usuarios internos.
+  // Temporal: esta API no estará disponible
+  // en producción hasta implementar autenticación.
 
   if (process.env.NODE_ENV !== "development") {
     return NextResponse.json(
@@ -17,20 +16,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Leer los datos recibidos.
-
   let body: unknown;
 
   try {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { error: "El cuerpo de la petición debe ser un JSON válido." },
+      { error: "El cuerpo debe ser un JSON válido." },
       { status: 400 },
     );
   }
-
-  // 2. Validar la estructura y los tipos de datos.
 
   if (
     typeof body !== "object" ||
@@ -43,34 +38,46 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name, phone } = body as Record<string, unknown>;
+  const {
+    name,
+    lastName,
+    dni,
+    phone,
+    email,
+    address,
+  } = body as Record<string, unknown>;
+
+  // Validar los tipos recibidos.
 
   if (
     typeof name !== "string" ||
-    name.trim().length === 0 ||
+    typeof lastName !== "string" ||
+    typeof dni !== "string" ||
     typeof phone !== "string" ||
-    phone.trim().length === 0
+    (email != null && typeof email !== "string") ||
+    (address != null && typeof address !== "string")
   ) {
     return NextResponse.json(
-      { error: "El nombre y el teléfono son obligatorios." },
+      { error: "Los datos del cliente no son válidos." },
       { status: 400 },
     );
   }
 
-  // 3. Ejecutar nuestro caso de uso.
+  const repository = new PrismaCustomerRepository();
 
   try {
-    const repository = new PrismaCustomerRepository();
 
     const customer = await registerCustomer(
       {
         name,
+        lastName,
+        dni,
         phone,
+        email,
+        address,
       },
       repository,
     );
-
-    // 4. Devolver el cliente registrado.
 
     return NextResponse.json(customer, {
       status: 201,
@@ -78,7 +85,43 @@ export async function POST(request: Request) {
 
   } catch (error) {
 
-    console.error("Error al registrar el cliente:", error);
+    // Errores conocidos de validación del dominio.
+
+    if (
+      error instanceof Error &&
+      (
+        error.message.includes("obligatorio") ||
+        error.message.includes("únicamente números") ||
+        error.message.includes("no es válido")
+      )
+    ) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 },
+      );
+    }
+
+    // Prisma P2002: DNI o teléfono duplicado.
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Ya existe un cliente con ese DNI o teléfono.",
+        },
+        { status: 409 },
+      );
+    }
+
+    console.error(
+      "Error al registrar el cliente:",
+      error,
+    );
 
     return NextResponse.json(
       { error: "No se pudo registrar el cliente." },

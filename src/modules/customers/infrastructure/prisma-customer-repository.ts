@@ -1,10 +1,15 @@
-import type { Customer } from "../domain/customer.ts";
+import type {
+  Customer,
+} from "../domain/customer.ts";
 
-import type { CustomerRepository } from "../application/customer-repository.ts";
+import type {
+  CustomerRepository,
+} from "../application/customer-repository.ts";
 
 import { prisma } from "../../../lib/prisma.ts";
 
-export class PrismaCustomerRepository implements CustomerRepository {
+export class PrismaCustomerRepository
+  implements CustomerRepository {
 
   async add(customer: Customer): Promise<void> {
 
@@ -12,12 +17,15 @@ export class PrismaCustomerRepository implements CustomerRepository {
       data: {
         id: customer.id,
         name: customer.name,
+        lastName: customer.lastName,
+        dni: customer.dni,
         phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
         createdAt: customer.createdAt,
         updatedAt: customer.updatedAt,
       },
     });
 
   }
-
 }
