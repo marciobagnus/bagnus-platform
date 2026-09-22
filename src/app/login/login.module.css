@@ -1,0 +1,111 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f4f6f8;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 16px 45px rgb(0 0 0 / 8%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 38px;
+}
+
+.logo {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 12px;
+  background: #111827;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.brand h1 {
+  font-size: 21px;
+}
+
+.brand p {
+  margin-top: 2px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.heading {
+  margin-bottom: 26px;
+}
+
+.heading h2 {
+  margin-bottom: 7px;
+  font-size: 27px;
+}
+
+.heading p {
+  color: #667085;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.form label {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 9px;
+  background: white;
+  color: #101828;
+  font: inherit;
+}
+
+.form input:focus {
+  border-color: #667085;
+  outline: 3px solid rgb(102 112 133 / 12%);
+}
+
+.form button {
+  height: 46px;
+  border: 0;
+  border-radius: 9px;
+  background: #111827;
+  color: white;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff1f1;
+  color: #b42318;
+  font-size: 14px;
+}

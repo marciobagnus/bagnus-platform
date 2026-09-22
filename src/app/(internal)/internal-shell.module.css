@@ -1,0 +1,119 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  background: #f7f8fa;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 18px;
+  border-right: 1px solid #e4e7ec;
+  background: white;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 8px 28px;
+}
+
+.logo {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 10px;
+  background: #111827;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.brand > div:last-child {
+  display: grid;
+}
+
+.brand strong {
+  font-size: 17px;
+}
+
+.brand span,
+.account span {
+  margin-top: 2px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.navigation {
+  display: grid;
+  gap: 6px;
+}
+
+.navigation a,
+.navigation span {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #344054;
+  font-size: 14px;
+}
+
+.navigation a {
+  background: #f2f4f7;
+  font-weight: 600;
+}
+
+.navigation span {
+  color: #98a2b3;
+}
+
+.account {
+  display: grid;
+  gap: 14px;
+  margin-top: auto;
+  padding: 18px 8px 0;
+  border-top: 1px solid #eaecf0;
+}
+
+.account > div {
+  display: grid;
+}
+
+.account strong {
+  font-size: 14px;
+}
+
+.logout {
+  padding: 8px 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  background: white;
+  color: #344054;
+  cursor: pointer;
+}
+
+.content {
+  min-width: 0;
+  padding: 36px;
+}
+
+@media (max-width: 760px) {
+  .shell {
+    display: block;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+  }
+
+  .content {
+    padding: 22px;
+  }
+}
