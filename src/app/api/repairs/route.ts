@@ -5,6 +5,9 @@ import { registerRepairOrder } from "../../../modules/repairs/application/regist
 
 import { PrismaRepairOrderRepository } from "../../../modules/repairs/infrastructure/prisma-repair-order-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../lib/current-internal-user.ts";
 export async function POST(request: Request) {
 
   // Temporal: restringido al entorno de desarrollo.
@@ -17,6 +20,16 @@ export async function POST(request: Request) {
       { status: 403 },
     );
   }
+
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   // 1. Leer el cuerpo de la petición.
 

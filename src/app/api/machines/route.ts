@@ -5,6 +5,9 @@ import { registerMachine } from "../../../modules/machines/application/register-
 
 import { PrismaMachineRepository } from "../../../modules/machines/infrastructure/prisma-machine-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../lib/current-internal-user.ts";
 export async function POST(request: Request) {
   // Temporal: solamente disponible en desarrollo.
   // Antes de utilizarlo con datos reales,
@@ -16,6 +19,16 @@ export async function POST(request: Request) {
       { status: 403 },
     );
   }
+
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   // 1. Leer el cuerpo de la petición.
 

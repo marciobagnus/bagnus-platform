@@ -264,3 +264,12 @@
     display: none;
   }
 }
+
+.detailLink {
+  color: #344054;
+  font-weight: 600;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}

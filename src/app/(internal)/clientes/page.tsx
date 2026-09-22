@@ -7,6 +7,8 @@ import {
 
 import styles from "./clientes.module.css";
 
+import Link from "next/link";
+
 type CustomerResult = {
   id: string;
   name: string;
@@ -289,13 +291,12 @@ export default function CustomersPage() {
                         styles.actions
                       }
                     >
-                      <button
-                        type="button"
-                        disabled
-                        title="Disponible en la próxima etapa"
-                      >
-                        Ver ficha
-                      </button>
+                      <Link
+  className={styles.detailLink}
+  href={`/clientes/${customer.id}`}
+>
+  Ver ficha
+</Link>
                     </td>
                   </tr>
                 ))}

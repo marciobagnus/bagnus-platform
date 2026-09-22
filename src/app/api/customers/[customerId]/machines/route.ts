@@ -5,6 +5,10 @@ import { listCustomerMachines } from "../../../../../modules/machines/applicatio
 
 import { PrismaMachineListRepository } from "../../../../../modules/machines/infrastructure/prisma-machine-list-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user.ts";
+
 type RouteContext = {
   params: Promise<{
     customerId: string;
@@ -24,6 +28,16 @@ export async function GET(
       { status: 403 },
     );
   }
+
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   const { customerId } = await params;
 
