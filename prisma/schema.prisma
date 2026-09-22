@@ -53,6 +53,7 @@ enum RepairStatus {
   READY_FOR_PICKUP
   DELIVERED
   CANCELLED
+  AWAITING_PICKUP_UNREPAIRED
 }
 
 model RepairOrder {
@@ -71,6 +72,8 @@ model RepairOrder {
   machine Machine @relation(fields: [machineId], references: [id], onDelete: Restrict)
 
   statusHistory RepairStatusHistory[]
+
+  quotes RepairQuote[]
 
   @@index([machineId])
   @@index([status])
@@ -91,4 +94,61 @@ model RepairStatusHistory {
 
   @@index([repairOrderId, changedAt])
   @@map("repair_status_history")
+}
+
+enum QuoteStatus {
+  DRAFT
+  WAITING_APPROVAL
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum QuoteDecisionChannel {
+  IN_PERSON
+  PHONE
+  WHATSAPP
+  EMAIL
+  CUSTOMER_PORTAL
+}
+
+model RepairQuote {
+  id            String @id @db.Uuid
+  repairOrderId String @db.Uuid
+
+  version Int
+
+  description String
+  totalAmount Decimal @db.Decimal(12, 2)
+  currency    String  @default("ARS")
+
+  status QuoteStatus @default(DRAFT)
+
+  createdAt DateTime
+  updatedAt DateTime
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Restrict)
+
+  decisions QuoteDecision[]
+
+  @@unique([repairOrderId, version])
+  @@index([repairOrderId])
+  @@map("repair_quotes")
+}
+
+model QuoteDecision {
+  id      String @id @db.Uuid
+  quoteId String @db.Uuid
+
+  approved Boolean
+  channel  QuoteDecisionChannel
+
+  note      String?
+  decidedAt DateTime
+
+  quote RepairQuote @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+
+  @@unique([quoteId])
+  @@index([quoteId])
+  @@map("quote_decisions")
 }

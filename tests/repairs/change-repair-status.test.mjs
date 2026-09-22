@@ -96,3 +96,46 @@ test("impide cambiar una reparación entregada", () => {
     /No se permite cambiar/,
   );
 });
+
+test("permite pasar de DIAGNOSING a WAITING_APPROVAL", () => {
+  const now = new Date();
+
+  const result = changeRepairStatus({
+    currentStatus: "DIAGNOSING",
+    newStatus: "WAITING_APPROVAL",
+    note: "Presupuesto informado al cliente.",
+    now,
+  });
+
+  assert.equal(result.fromStatus, "DIAGNOSING");
+  assert.equal(result.toStatus, "WAITING_APPROVAL");
+  assert.equal(
+    result.note,
+    "Presupuesto informado al cliente.",
+  );
+});
+
+test("permite pasar de WAITING_APPROVAL a IN_REPAIR", () => {
+  const result = changeRepairStatus({
+    currentStatus: "WAITING_APPROVAL",
+    newStatus: "IN_REPAIR",
+    now: new Date(),
+  });
+
+  assert.equal(result.fromStatus, "WAITING_APPROVAL");
+  assert.equal(result.toStatus, "IN_REPAIR");
+});
+
+test("permite dejar pendiente de retiro una máquina sin reparar", () => {
+  const result = changeRepairStatus({
+    currentStatus: "WAITING_APPROVAL",
+    newStatus: "AWAITING_PICKUP_UNREPAIRED",
+    now: new Date(),
+  });
+
+  assert.equal(result.fromStatus, "WAITING_APPROVAL");
+  assert.equal(
+    result.toStatus,
+    "AWAITING_PICKUP_UNREPAIRED",
+  );
+});

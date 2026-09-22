@@ -100,6 +100,23 @@ export async function PATCH(
     );
   }
 
+  // Temporalmente, el cambio de estado genérico solamente
+// permite iniciar el diagnóstico.
+//
+// Las transiciones vinculadas a presupuestos se realizan
+// mediante sus propios casos de uso para mantener
+// consistentes la reparación y el presupuesto.
+
+if (status !== "DIAGNOSING") {
+  return NextResponse.json(
+    {
+      error:
+        "Este cambio de estado debe realizarse mediante la operación correspondiente del taller.",
+    },
+    { status: 409 },
+  );
+}
+
   // 5. Ejecutar el caso de uso.
 
   try {

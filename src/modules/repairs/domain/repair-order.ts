@@ -6,7 +6,8 @@ export type RepairStatus =
   | "IN_REPAIR"
   | "READY_FOR_PICKUP"
   | "DELIVERED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "AWAITING_PICKUP_UNREPAIRED";
 
 export type RepairOrder = {
   id: string;
