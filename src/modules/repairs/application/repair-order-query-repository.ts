@@ -11,6 +11,12 @@ export type RepairOrderDetails = RepairOrder & {
     type: string;
     model: string | null;
     serialNumber: string | null;
+    customer: {
+      id: string;
+      name: string;
+      lastName: string | null;
+      phone: string;
+    };
   };
 
   statusHistory: {
@@ -19,10 +25,20 @@ export type RepairOrderDetails = RepairOrder & {
     toStatus: RepairStatus;
     note: string | null;
     changedAt: Date;
+    changedBy: {
+      id: string;
+      displayName: string;
+    } | null;
   }[];
 };
 
+export type RepairOrderListItem = RepairOrder & {
+  machine: RepairOrderDetails["machine"];
+};
+
 export interface RepairOrderQueryRepository {
+  findRecent(limit: number): Promise<RepairOrderListItem[]>;
+
   findById(
     repairId: string,
   ): Promise<RepairOrderDetails | null>;

@@ -5,6 +5,10 @@ import { getRepairOrder } from "../../../../modules/repairs/application/get-repa
 
 import { PrismaRepairOrderQueryRepository } from "../../../../modules/repairs/infrastructure/prisma-repair-order-query-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../lib/current-internal-user.ts";
+
 type RouteContext = {
   params: Promise<{
     repairId: string;
@@ -23,6 +27,15 @@ export async function GET(
     return NextResponse.json(
       { error: "Endpoint no disponible." },
       { status: 403 },
+    );
+  }
+
+  const user = await getAuthenticatedInternalUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 

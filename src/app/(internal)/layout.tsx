@@ -66,12 +66,12 @@ export default async function InternalLayout({
           </Link>
 
           <Link href="/clientes">
-  Clientes
-</Link>
+            Clientes
+          </Link>
 
-          <span>
+          <Link href="/reparaciones">
             Reparaciones
-          </span>
+          </Link>
         </nav>
 
         <footer className={styles.account}>

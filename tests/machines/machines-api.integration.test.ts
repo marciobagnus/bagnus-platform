@@ -5,7 +5,15 @@ import { randomInt, randomUUID } from "node:crypto";
 
 import { registerCustomer } from "../../src/modules/customers/application/register-customer.ts";
 
+import {
+  createInternalUser,
+} from "../../src/modules/users/application/internal-auth.ts";
+
 import { PrismaCustomerRepository } from "../../src/modules/customers/infrastructure/prisma-customer-repository.ts";
+
+import {
+  PrismaInternalAuthRepository,
+} from "../../src/modules/users/infrastructure/prisma-internal-auth-repository.ts";
 
 import { prisma } from "../../src/lib/prisma.ts";
 
@@ -13,11 +21,55 @@ const BASE_URL = "http://127.0.0.1:3000";
 
 test("la API registra y consulta máquinas de un cliente", async () => {
   const repository = new PrismaCustomerRepository();
+  const userRepository =
+    new PrismaInternalAuthRepository();
 
   let customerId: string | undefined;
+  let userId: string | undefined;
+  let machineId: string | undefined;
+  let sessionCookie: string | undefined;
 
   try {
-    // 1. Crear un cliente exclusivo para el test.
+    // 1. Crear un usuario y un cliente exclusivos para el test.
+
+    const username = `test-${randomUUID()}`;
+    const password = "Password-Test-123!";
+
+    const user = await createInternalUser(
+      {
+        username,
+        displayName: "Usuario de prueba máquinas",
+        password,
+        role: "ADMIN",
+      },
+      userRepository,
+    );
+
+    userId = user.id;
+
+    const loginResponse = await fetch(
+      `${BASE_URL}/api/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      },
+    );
+
+    assert.equal(loginResponse.status, 200);
+
+    const setCookie = loginResponse.headers.get(
+      "set-cookie",
+    );
+
+    assert.ok(setCookie);
+
+    sessionCookie = setCookie.split(";", 1)[0];
 
     const customer = await registerCustomer(
       {
@@ -34,9 +86,15 @@ test("la API registra y consulta máquinas de un cliente", async () => {
     const url =
       `${BASE_URL}/api/customers/${customerId}/machines`;
 
+    const authenticatedHeaders = {
+      Cookie: sessionCookie,
+    };
+
     // 2. El cliente todavía no tiene máquinas.
 
-    const emptyResponse = await fetch(url);
+    const emptyResponse = await fetch(url, {
+      headers: authenticatedHeaders,
+    });
 
     assert.equal(emptyResponse.status, 200);
     assert.deepEqual(await emptyResponse.json(), []);
@@ -49,6 +107,7 @@ test("la API registra y consulta máquinas de un cliente", async () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...authenticatedHeaders,
         },
         body: JSON.stringify({
           customerId,
@@ -60,6 +119,7 @@ test("la API registra y consulta máquinas de un cliente", async () => {
     );
 
     const createdMachine = await registerResponse.json();
+    machineId = createdMachine.id;
 
     assert.equal(
       registerResponse.status,
@@ -75,7 +135,9 @@ test("la API registra y consulta máquinas de un cliente", async () => {
 
     // 4. Consultar las máquinas mediante la API.
 
-    const listResponse = await fetch(url);
+    const listResponse = await fetch(url, {
+      headers: authenticatedHeaders,
+    });
 
     assert.equal(listResponse.status, 200);
 
@@ -90,6 +152,9 @@ test("la API registra y consulta máquinas de un cliente", async () => {
 
     const notFoundResponse = await fetch(
       `${BASE_URL}/api/customers/${randomUUID()}/machines`,
+      {
+        headers: authenticatedHeaders,
+      },
     );
 
     assert.equal(notFoundResponse.status, 404);
@@ -98,6 +163,9 @@ test("la API registra y consulta máquinas de un cliente", async () => {
 
     const invalidResponse = await fetch(
       `${BASE_URL}/api/customers/identificador-invalido/machines`,
+      {
+        headers: authenticatedHeaders,
+      },
     );
 
     assert.equal(invalidResponse.status, 400);
@@ -106,13 +174,25 @@ test("la API registra y consulta máquinas de un cliente", async () => {
 
     // Eliminar solamente los datos creados por este test.
 
-    if (customerId) {
+    if (machineId) {
       await prisma.machine.deleteMany({
-        where: { customerId },
+        where: { id: machineId },
       });
+    }
 
+    if (customerId) {
       await prisma.customer.delete({
         where: { id: customerId },
+      });
+    }
+
+    if (userId) {
+      await prisma.internalSession.deleteMany({
+        where: { userId },
+      });
+
+      await prisma.internalUser.delete({
+        where: { id: userId },
       });
     }
 
