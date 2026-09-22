@@ -204,3 +204,38 @@ model DiagnosisCharge {
 
   @@map("diagnosis_charges")
 }
+
+enum InternalUserRole {
+  ADMIN
+  STAFF
+}
+
+model InternalUser {
+  id           String           @id @db.Uuid
+  username     String           @unique
+  displayName  String
+  passwordHash String
+  role         InternalUserRole
+  active       Boolean          @default(true)
+  createdAt    DateTime
+  updatedAt    DateTime
+
+  sessions InternalSession[]
+
+  @@map("internal_users")
+}
+
+model InternalSession {
+  id        String @id @db.Uuid
+  userId    String @db.Uuid
+  tokenHash String @unique @db.VarChar(64)
+
+  createdAt DateTime
+  expiresAt DateTime
+
+  user InternalUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("internal_sessions")
+}
