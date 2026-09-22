@@ -15,6 +15,9 @@ import {
   type RepairStatus,
 } from "../repair-status";
 
+type PaymentMethod = "CASH" | "TRANSFER" | "CARD" | "OTHER";
+type DiagnosisDecision = "CHARGED" | "WAIVED";
+
 type Repair = {
   id: string;
   status: RepairStatus;
@@ -37,6 +40,7 @@ type Repair = {
     }[];
   }[];
   machine: {
+    id: string;
     brand: string;
     type: string;
     model: string | null;
@@ -48,6 +52,39 @@ type Repair = {
       phone: string;
     };
   };
+  billing: {
+    amountDue: string | null;
+    totalPaid: string;
+    outstandingBalance: string | null;
+    currency: string;
+    billingResolved: boolean;
+    hasOutstandingBalance: boolean;
+  };
+  payments: {
+    id: string;
+    amount: string;
+    currency: string;
+    method: PaymentMethod;
+    reference: string | null;
+    note: string | null;
+    receivedAt: string;
+    recordedBy: {
+      id: string;
+      displayName: string;
+    } | null;
+  }[];
+  diagnosisCharge: {
+    id: string;
+    decision: DiagnosisDecision;
+    amount: string;
+    currency: string;
+    note: string | null;
+    decidedAt: string;
+    decidedBy: {
+      id: string;
+      displayName: string;
+    } | null;
+  } | null;
   statusHistory: {
     id: string;
     fromStatus: RepairStatus | null;
@@ -60,6 +97,23 @@ type Repair = {
     } | null;
   }[];
 };
+
+async function fetchRepair(repairId: string) {
+  try {
+    const response = await fetch(`/api/repairs/${repairId}`);
+    const body = await response.json();
+
+    if (!response.ok) {
+      return {
+        error: body.error ?? "No se pudo consultar la reparación.",
+      };
+    }
+
+    return { repair: body as Repair };
+  } catch {
+    return { error: "No se pudo conectar con el servidor." };
+  }
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-AR", {
@@ -74,25 +128,40 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-async function fetchRepair(repairId: string) {
-  try {
-    const response = await fetch(`/api/repairs/${repairId}`);
-    const body = await response.json();
+function formatCurrency(value: string) {
+  return `ARS ${formatAmount(value)}`;
+}
 
-    if (!response.ok) {
-      return {
-        error:
-          body.error ??
-          "No se pudo consultar la reparación.",
-      };
-    }
+function formatAmount(value: string) {
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value));
+}
 
-    return { repair: body as Repair };
-  } catch {
-    return {
-      error: "No se pudo conectar con el servidor.",
-    };
+function getPaymentMethodLabel(method: string) {
+  switch (method) {
+    case "CASH":
+      return "Efectivo";
+    case "TRANSFER":
+      return "Transferencia";
+    case "CARD":
+      return "Tarjeta";
+    case "OTHER":
+      return "Otro";
+    default:
+      return method;
   }
+}
+
+function canRegisterPayment(repair: Repair) {
+  return (
+    repair.billing.billingResolved &&
+    repair.billing.hasOutstandingBalance &&
+    (repair.status === "READY_FOR_PICKUP" ||
+      (repair.status === "AWAITING_PICKUP_UNREPAIRED" &&
+        repair.diagnosisCharge?.decision === "CHARGED"))
+  );
 }
 
 export default function RepairDetailPage({
@@ -113,6 +182,15 @@ export default function RepairDetailPage({
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED">("APPROVED");
   const [decisionChannel, setDecisionChannel] = useState<keyof typeof DECISION_CHANNELS>("IN_PERSON");
   const [decisionNote, setDecisionNote] = useState("");
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentNote, setPaymentNote] = useState("");
+  const [showDiagnosisForm, setShowDiagnosisForm] = useState(false);
+  const [diagnosisDecision, setDiagnosisDecision] = useState<DiagnosisDecision>("CHARGED");
+  const [diagnosisAmount, setDiagnosisAmount] = useState("");
+  const [diagnosisNote, setDiagnosisNote] = useState("");
 
   const loadRepair = useCallback(async () => {
     const result = await fetchRepair(repairId);
@@ -139,9 +217,7 @@ export default function RepairDetailPage({
       const body = await response.json();
 
       if (!response.ok) {
-        setActionError(
-          body.error ?? "No se pudo completar la operación.",
-        );
+        setActionError(body.error ?? "No se pudo completar la operación.");
         return false;
       }
 
@@ -230,6 +306,63 @@ export default function RepairDetailPage({
     );
   }
 
+  async function submitPayment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const completed = await executeAction("payment", () =>
+      fetch(`/api/repairs/${repairId}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: paymentAmount,
+          method: paymentMethod,
+          reference: paymentReference.trim() || null,
+          note: paymentNote.trim() || null,
+        }),
+      }),
+    );
+
+    if (completed) {
+      setShowPaymentForm(false);
+      setPaymentAmount("");
+      setPaymentReference("");
+      setPaymentNote("");
+      setPaymentMethod("CASH");
+    }
+  }
+
+  async function submitDiagnosisDecision(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const completed = await executeAction("diagnosis", () =>
+      fetch(`/api/repairs/${repairId}/diagnosis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decision: diagnosisDecision,
+          amount: diagnosisDecision === "CHARGED" ? diagnosisAmount : null,
+          note: diagnosisNote.trim() || null,
+        }),
+      }),
+    );
+
+    if (completed) {
+      setShowDiagnosisForm(false);
+      setDiagnosisAmount("");
+      setDiagnosisNote("");
+    }
+  }
+
+  async function handOverMachine() {
+    await executeAction("handover", () =>
+      fetch(`/api/repairs/${repairId}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "HAND_OVER_MACHINE" }),
+      }),
+    );
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -263,9 +396,7 @@ export default function RepairDetailPage({
         <Link href="/reparaciones" className={styles.back}>
           ← Volver a reparaciones
         </Link>
-        <div className={styles.error}>
-          {error || "La reparación indicada no existe."}
-        </div>
+        <div className={styles.error}>{error || "La reparación indicada no existe."}</div>
         <button
           className={styles.secondaryButton}
           type="button"
@@ -281,9 +412,7 @@ export default function RepairDetailPage({
   }
 
   const customer = repair.machine.customer;
-  const customerName = [customer.name, customer.lastName]
-    .filter(Boolean)
-    .join(" ");
+  const customerName = [customer.name, customer.lastName].filter(Boolean).join(" ");
   const currentQuote = repair.quotes[0] ?? null;
 
   return (
@@ -469,6 +598,188 @@ export default function RepairDetailPage({
         </section>
       )}
 
+      <section className={`${styles.card} ${styles.financialCard}`}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2>Cuenta de la reparación</h2>
+            <p>Resumen financiero calculado por el backend.</p>
+          </div>
+        </div>
+
+        {!repair.billing.billingResolved ? (
+          <p className={styles.actionMessage}>El importe a cobrar todavía no está determinado.</p>
+        ) : (
+          <>
+            <div className={styles.billingRow}>
+              <span>Importe total</span>
+              <strong>{formatCurrency(repair.billing.amountDue ?? "0.00")}</strong>
+            </div>
+            <div className={styles.billingRow}>
+              <span>Pagado</span>
+              <strong>{formatCurrency(repair.billing.totalPaid)}</strong>
+            </div>
+            <div className={styles.billingRow}>
+              <span>Saldo pendiente</span>
+              <strong>{formatCurrency(repair.billing.outstandingBalance ?? "0.00")}</strong>
+            </div>
+          </>
+        )}
+
+        <div className={styles.paymentsSection}>
+          <h3>Pagos registrados</h3>
+          {repair.payments.length === 0 ? (
+            <p className={styles.empty}>No hay pagos registrados.</p>
+          ) : (
+            <ul className={styles.paymentList}>
+              {repair.payments.map((payment) => (
+                <li key={payment.id} className={styles.paymentItem}>
+                  <div className={styles.paymentHeader}>
+                    <strong>{formatCurrency(payment.amount)}</strong>
+                    <span>{getPaymentMethodLabel(payment.method)}</span>
+                  </div>
+                  <p>{formatDateTime(payment.receivedAt)}</p>
+                  {payment.reference && <p>Referencia: {payment.reference}</p>}
+                  {payment.note && <p>Nota: {payment.note}</p>}
+                  <p className={styles.changedBy}>
+                    {payment.recordedBy?.displayName ?? "Sistema / histórico"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {canRegisterPayment(repair) && (
+          <div className={styles.sectionActions}>
+            <button
+              className={styles.primaryButton}
+              type="button"
+              onClick={() => {
+                setActionError("");
+                setShowPaymentForm(true);
+              }}
+              disabled={actionLoading !== ""}
+            >
+              {actionLoading === "payment" ? "Registrando..." : "Registrar pago"}
+            </button>
+          </div>
+        )}
+      </section>
+
+      {repair.status === "AWAITING_PICKUP_UNREPAIRED" && (
+        <section className={`${styles.card} ${styles.financialCard}`}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2>Diagnóstico</h2>
+              <p>Decisión del cargo por diagnóstico.</p>
+            </div>
+          </div>
+
+          {!repair.diagnosisCharge ? (
+            <>
+              <p className={styles.actionMessage}>
+                El cliente rechazó el presupuesto. Definí si corresponde cobrar el diagnóstico.
+              </p>
+              <div className={styles.sectionActions}>
+                <button
+                  className={styles.primaryButton}
+                  type="button"
+                  onClick={() => {
+                    setActionError("");
+                    setDiagnosisDecision("CHARGED");
+                    setShowDiagnosisForm(true);
+                  }}
+                  disabled={actionLoading !== ""}
+                >
+                  Cobrar diagnóstico
+                </button>
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  onClick={() => {
+                    setActionError("");
+                    setDiagnosisDecision("WAIVED");
+                    setShowDiagnosisForm(true);
+                  }}
+                  disabled={actionLoading !== ""}
+                >
+                  Bonificar diagnóstico
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className={styles.diagnosisInfo}>
+              <p>
+                <strong>
+                  {repair.diagnosisCharge.decision === "CHARGED"
+                    ? "Diagnóstico cobrado"
+                    : "Diagnóstico bonificado"}
+                </strong>
+              </p>
+              <p>{repair.diagnosisCharge.note ?? "Sin nota."}</p>
+              {repair.diagnosisCharge.decision === "CHARGED" && (
+                <p>Importe: {formatCurrency(repair.diagnosisCharge.amount)}</p>
+              )}
+              <p>Fecha: {formatDateTime(repair.diagnosisCharge.decidedAt)}</p>
+              <p>
+                Usuario: {repair.diagnosisCharge.decidedBy?.displayName ?? "Sistema / histórico"}
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {(repair.status === "READY_FOR_PICKUP" || repair.status === "AWAITING_PICKUP_UNREPAIRED") && (
+        <section className={`${styles.card} ${styles.financialCard}`}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2>Entrega</h2>
+              <p>Entrega de la máquina según la regla del backend.</p>
+            </div>
+          </div>
+
+          {repair.status === "READY_FOR_PICKUP" && (
+            <>
+              {repair.billing.outstandingBalance !== "0.00" ? (
+                <p className={styles.actionMessage}>
+                  Hay saldo pendiente. La máquina no puede entregarse.
+                </p>
+              ) : (
+                <button
+                  className={styles.primaryButton}
+                  type="button"
+                  onClick={() => handOverMachine()}
+                  disabled={actionLoading !== ""}
+                >
+                  {actionLoading === "handover" ? "Entregando..." : "Entregar máquina"}
+                </button>
+              )}
+            </>
+          )}
+
+          {repair.status === "AWAITING_PICKUP_UNREPAIRED" && (
+            <>
+              {!repair.diagnosisCharge ? (
+                <p className={styles.actionMessage}>Primero debe resolverse el diagnóstico.</p>
+              ) : repair.diagnosisCharge.decision === "CHARGED" && repair.billing.hasOutstandingBalance ? (
+                <p className={styles.actionMessage}>
+                  Debe cancelarse el saldo del diagnóstico antes de entregar.
+                </p>
+              ) : (
+                <button
+                  className={styles.primaryButton}
+                  type="button"
+                  onClick={() => handOverMachine()}
+                  disabled={actionLoading !== ""}
+                >
+                  {actionLoading === "handover" ? "Entregando..." : "Entregar máquina sin reparar"}
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
       <section className={styles.historySection}>
         <div className={styles.sectionHeader}>
           <div>
@@ -485,9 +796,7 @@ export default function RepairDetailPage({
               <li key={change.id}>
                 <div className={styles.historyStatus}>
                   <strong>
-                    {change.fromStatus
-                      ? getRepairStatusLabel(change.fromStatus)
-                      : "Inicio"}
+                    {change.fromStatus ? getRepairStatusLabel(change.fromStatus) : "Inicio"}
                   </strong>
                   <span>→</span>
                   <strong>{getRepairStatusLabel(change.toStatus)}</strong>
@@ -575,14 +884,20 @@ export default function RepairDetailPage({
             <form className={styles.form} onSubmit={(event) => saveDecision(event, currentQuote.id)}>
               <label>
                 Decisión
-                <select value={decision} onChange={(event) => setDecision(event.target.value as "APPROVED" | "REJECTED")}>
+                <select
+                  value={decision}
+                  onChange={(event) => setDecision(event.target.value as "APPROVED" | "REJECTED")}
+                >
                   <option value="APPROVED">Aprobar</option>
                   <option value="REJECTED">Rechazar</option>
                 </select>
               </label>
               <label>
                 Canal
-                <select value={decisionChannel} onChange={(event) => setDecisionChannel(event.target.value as keyof typeof DECISION_CHANNELS)}>
+                <select
+                  value={decisionChannel}
+                  onChange={(event) => setDecisionChannel(event.target.value as keyof typeof DECISION_CHANNELS)}
+                >
                   {Object.entries(DECISION_CHANNELS).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
@@ -598,6 +913,117 @@ export default function RepairDetailPage({
                 </button>
                 <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
                   {actionLoading === "decision" ? "Guardando..." : "Registrar decisión"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPaymentForm && (
+        <div className={styles.overlay}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="payment-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="payment-title">Registrar pago</h2>
+                <p>Ingresá el importe y el medio de pago.</p>
+              </div>
+              <button
+                className={styles.close}
+                type="button"
+                onClick={() => setShowPaymentForm(false)}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            {actionError && <div className={styles.formError}>{actionError}</div>}
+            <form className={styles.form} onSubmit={submitPayment}>
+              <label>
+                Importe
+                <input
+                  value={paymentAmount}
+                  onChange={(event) => setPaymentAmount(event.target.value)}
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  required
+                />
+              </label>
+              <label>
+                Método de pago
+                <select
+                  value={paymentMethod}
+                  onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+                >
+                  {PAYMENT_METHOD_OPTIONS.map((method) => (
+                    <option key={method} value={method}>{getPaymentMethodLabel(method)}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Referencia (opcional)
+                <input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} />
+              </label>
+              <label>
+                Nota (opcional)
+                <textarea value={paymentNote} onChange={(event) => setPaymentNote(event.target.value)} rows={3} />
+              </label>
+              <div className={styles.modalActions}>
+                <button className={styles.secondaryButton} type="button" onClick={() => setShowPaymentForm(false)}>
+                  Cancelar
+                </button>
+                <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
+                  {actionLoading === "payment" ? "Registrando..." : "Registrar pago"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDiagnosisForm && (
+        <div className={styles.overlay}>
+          <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="diagnosis-title">
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="diagnosis-title">
+                  {diagnosisDecision === "CHARGED" ? "Cobrar diagnóstico" : "Bonificar diagnóstico"}
+                </h2>
+                <p>La decisión se registra con auditoría del usuario activo.</p>
+              </div>
+              <button
+                className={styles.close}
+                type="button"
+                onClick={() => setShowDiagnosisForm(false)}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            {actionError && <div className={styles.formError}>{actionError}</div>}
+            <form className={styles.form} onSubmit={submitDiagnosisDecision}>
+              {diagnosisDecision === "CHARGED" && (
+                <label>
+                  Importe
+                  <input
+                    value={diagnosisAmount}
+                    onChange={(event) => setDiagnosisAmount(event.target.value)}
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    required
+                  />
+                </label>
+              )}
+              <label>
+                Nota (opcional)
+                <textarea value={diagnosisNote} onChange={(event) => setDiagnosisNote(event.target.value)} rows={3} />
+              </label>
+              <div className={styles.modalActions}>
+                <button className={styles.secondaryButton} type="button" onClick={() => setShowDiagnosisForm(false)}>
+                  Cancelar
+                </button>
+                <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
+                  {actionLoading === "diagnosis" ? "Registrando..." : diagnosisDecision === "CHARGED" ? "Cobrar diagnóstico" : "Bonificar diagnóstico"}
                 </button>
               </div>
             </form>
@@ -622,7 +1048,9 @@ function QuoteSummary({
         </div>
         <div>
           <dt>Importe</dt>
-          <dd>{quote.currency} {formatAmount(quote.totalAmount)}</dd>
+          <dd>
+            {quote.currency} {formatAmount(quote.totalAmount)}
+          </dd>
         </div>
         <div>
           <dt>Estado</dt>
@@ -646,13 +1074,6 @@ function QuoteSummary({
   );
 }
 
-function formatAmount(value: string) {
-  return new Intl.NumberFormat("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
-}
-
 const DECISION_CHANNELS = {
   IN_PERSON: "En persona",
   PHONE: "Teléfono",
@@ -660,6 +1081,8 @@ const DECISION_CHANNELS = {
   EMAIL: "Email",
   CUSTOMER_PORTAL: "Portal del cliente",
 } as const;
+
+const PAYMENT_METHOD_OPTIONS = ["CASH", "TRANSFER", "CARD", "OTHER"] as const;
 
 const QUOTE_STATUS_LABELS = {
   DRAFT: "Borrador",

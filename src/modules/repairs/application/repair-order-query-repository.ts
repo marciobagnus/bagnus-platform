@@ -4,6 +4,42 @@ import type {
   RepairStatus,
 } from "../domain/repair-order.ts";
 
+export type RepairOrderPaymentSummary = {
+  id: string;
+  amount: string;
+  currency: string;
+  method: "CASH" | "TRANSFER" | "CARD" | "OTHER";
+  reference: string | null;
+  note: string | null;
+  receivedAt: Date;
+  recordedBy: {
+    id: string;
+    displayName: string;
+  } | null;
+};
+
+export type RepairOrderDiagnosisSummary = {
+  id: string;
+  decision: "CHARGED" | "WAIVED";
+  amount: string;
+  currency: string;
+  note: string | null;
+  decidedAt: Date;
+  decidedBy: {
+    id: string;
+    displayName: string;
+  } | null;
+};
+
+export type RepairOrderBillingSummary = {
+  amountDue: string | null;
+  totalPaid: string;
+  outstandingBalance: string | null;
+  currency: string;
+  billingResolved: boolean;
+  hasOutstandingBalance: boolean;
+};
+
 export type RepairOrderDetails = RepairOrder & {
   quotes: {
     id: string;
@@ -34,6 +70,10 @@ export type RepairOrderDetails = RepairOrder & {
       phone: string;
     };
   };
+
+  billing: RepairOrderBillingSummary;
+  payments: RepairOrderPaymentSummary[];
+  diagnosisCharge: RepairOrderDiagnosisSummary | null;
 
   statusHistory: {
     id: string;
