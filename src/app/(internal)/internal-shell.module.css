@@ -64,8 +64,11 @@
 }
 
 .navigation a {
+  font-weight: 500;
+}
+
+.navigation a:hover {
   background: #f2f4f7;
-  font-weight: 600;
 }
 
 .navigation span {

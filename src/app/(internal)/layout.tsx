@@ -65,9 +65,9 @@ export default async function InternalLayout({
             Inicio
           </Link>
 
-          <span>
-            Clientes
-          </span>
+          <Link href="/clientes">
+  Clientes
+</Link>
 
           <span>
             Reparaciones

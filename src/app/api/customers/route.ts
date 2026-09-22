@@ -8,6 +8,10 @@ import { searchCustomers } from "../../../modules/customers/application/search-c
 
 import { PrismaCustomerSearchRepository } from "../../../modules/customers/infrastructure/prisma-customer-search-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../lib/current-internal-user.ts";
+
 export async function POST(request: Request) {
 
   // Temporal: esta API no estará disponible
@@ -19,6 +23,16 @@ export async function POST(request: Request) {
       { status: 403 },
     );
   }
+
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   let body: unknown;
 
@@ -147,6 +161,16 @@ export async function GET(request: Request) {
       { status: 403 },
     );
   }
+
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   const url = new URL(request.url);
 
