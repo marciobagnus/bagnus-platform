@@ -17,7 +17,7 @@ test("registra pagos asociados a una reparación en PostgreSQL", async () => {
   const now = new Date();
 
   try {
-    // Preparar datos exclusivos de este test.
+    // 1. Crear los datos exclusivos del test.
     await prisma.customer.create({
       data: {
         id: customerId,
@@ -45,14 +45,27 @@ test("registra pagos asociados a una reparación en PostgreSQL", async () => {
         id: repairOrderId,
         machineId,
         reportedIssue: "Reparación utilizada para probar pagos.",
-        status: "RECEIVED",
+        status: "IN_REPAIR",
         receivedAt: now,
         createdAt: now,
         updatedAt: now,
       },
     });
 
-    // Registrar un pago con referencia.
+    await prisma.repairQuote.create({
+      data: {
+        id: randomUUID(),
+        repairOrderId,
+        version: 1,
+        description: "Reparación de prueba",
+        totalAmount: "10000.00",
+        status: "APPROVED",
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+
+    // 2. Registrar dos pagos parciales.
     const firstPayment = await registerPayment(
       {
         repairOrderId,
@@ -64,7 +77,6 @@ test("registra pagos asociados a una reparación en PostgreSQL", async () => {
       repository,
     );
 
-    // Registrar un segundo pago sin referencia.
     const secondPayment = await registerPayment(
       {
         repairOrderId,
@@ -74,10 +86,9 @@ test("registra pagos asociados a una reparación en PostgreSQL", async () => {
       repository,
     );
 
-    // Leer lo que efectivamente quedó guardado.
+    // 3. Verificar los dos pagos iniciales.
     const savedPayments = await prisma.payment.findMany({
       where: { repairOrderId },
-      orderBy: { receivedAt: "asc" },
     });
 
     assert.equal(savedPayments.length, 2);
@@ -100,12 +111,103 @@ test("registra pagos asociados a una reparación en PostgreSQL", async () => {
     assert.equal(savedFirst.reference, "OP-12345");
     assert.equal(savedFirst.note, "Seña de reparación");
 
+    assert.equal(savedSecond.repairOrderId, repairOrderId);
     assert.equal(savedSecond.amount.toFixed(2), "2500.50");
     assert.equal(savedSecond.method, "CASH");
     assert.equal(savedSecond.reference, null);
     assert.equal(savedSecond.note, null);
 
-    // La base debe rechazar pagos vinculados a reparaciones inexistentes.
+    // Saldo: 10000.00 - 5000.00 - 2500.50 = 2499.50.
+
+    // 4. Rechazar un pago superior al saldo.
+    await assert.rejects(
+      registerPayment(
+        {
+          repairOrderId,
+          amount: "3000.00",
+          method: "CASH",
+        },
+        repository,
+      ),
+      /supera el saldo pendiente/,
+    );
+
+    assert.equal(
+      await prisma.payment.count({
+        where: { repairOrderId },
+      }),
+      2,
+    );
+
+    // 5. Dos cobros simultáneos de 2000.00
+    // no pueden registrarse ambos.
+    const concurrentResults = await Promise.allSettled([
+      registerPayment(
+        {
+          repairOrderId,
+          amount: "2000.00",
+          method: "CASH",
+        },
+        repository,
+      ),
+      registerPayment(
+        {
+          repairOrderId,
+          amount: "2000.00",
+          method: "TRANSFER",
+        },
+        repository,
+      ),
+    ]);
+
+    const successful = concurrentResults.filter(
+      (result) => result.status === "fulfilled",
+    );
+
+    const rejected = concurrentResults.filter(
+      (result) => result.status === "rejected",
+    );
+
+    assert.equal(
+      successful.length,
+      1,
+      "Exactamente uno de los cobros simultáneos debe registrarse.",
+    );
+
+    assert.equal(
+      rejected.length,
+      1,
+      "Exactamente uno de los cobros simultáneos debe rechazarse.",
+    );
+
+    // Es fundamental comprobar el MOTIVO del rechazo:
+    // no alcanza con que falle por un problema de conexión.
+    const rejectedResult = rejected[0];
+
+    assert.equal(rejectedResult.status, "rejected");
+
+    assert.match(
+      String(rejectedResult.reason),
+      /supera el saldo pendiente/,
+      "El cobro debe rechazarse por saldo insuficiente.",
+    );
+
+    // 6. Verificar el total final en PostgreSQL.
+    const finalPayments = await prisma.payment.findMany({
+      where: { repairOrderId },
+    });
+
+    assert.equal(finalPayments.length, 3);
+
+    const totalPaid = finalPayments.reduce(
+      (sum, payment) =>
+        sum + BigInt(payment.amount.mul(100).toFixed(0)),
+      0n,
+    );
+
+    assert.equal(totalPaid, 950050n);
+
+    // 7. Rechazar pagos de reparaciones inexistentes.
     await assert.rejects(
       registerPayment(
         {
@@ -115,10 +217,15 @@ test("registra pagos asociados a una reparación en PostgreSQL", async () => {
         },
         repository,
       ),
+      /reparación indicada no existe/,
     );
   } finally {
-    // Eliminar únicamente los registros creados por este test.
+    // Eliminar los datos del test respetando las relaciones.
     await prisma.payment.deleteMany({
+      where: { repairOrderId },
+    });
+
+    await prisma.repairQuote.deleteMany({
       where: { repairOrderId },
     });
 
