@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Configuración local de asistentes de IA
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
