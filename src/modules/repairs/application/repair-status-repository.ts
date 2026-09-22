@@ -17,6 +17,7 @@ export interface RepairStatusRepository {
     repairId: string,
     expectedStatus: RepairStatus,
     change: RepairStatusChange,
+    changedByUserId?: string | null,
   ): Promise<void>;
 
 }

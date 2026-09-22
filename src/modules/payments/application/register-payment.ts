@@ -16,6 +16,7 @@ export type RegisterPaymentInput = {
   method: PaymentMethod;
   reference?: string | null;
   note?: string | null;
+  recordedByUserId?: string | null;
 };
 
 export async function registerPayment(
@@ -32,7 +33,10 @@ export async function registerPayment(
     now: new Date(),
   });
 
-  await repository.add(payment);
+  await repository.add(
+  payment,
+  input.recordedByUserId ?? null,
+);
 
   return payment;
 }

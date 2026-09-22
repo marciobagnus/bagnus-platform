@@ -33,6 +33,7 @@ export type ProcessRepairActionInput = {
   repairId: string;
   action: RepairAction;
   note?: string | null;
+  changedByUserId?: string | null;
 };
 
 export async function processRepairAction(
@@ -121,6 +122,7 @@ export async function processRepairAction(
     repairId,
     currentStatus,
     statusChange,
+    input.changedByUserId ?? null,
   );
 
   return {

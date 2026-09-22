@@ -36,6 +36,7 @@ export class PrismaRepairStatusRepository
     repairId: string,
     expectedStatus: RepairStatus,
     change: RepairStatusChange,
+    changedByUserId?: string | null,
   ): Promise<void> {
     await prisma.$transaction(async (tx) => {
       // Actualizar primero bloquea la fila de la reparación.
@@ -164,6 +165,7 @@ export class PrismaRepairStatusRepository
           toStatus: change.toStatus,
           note: change.note,
           changedAt: change.changedAt,
+          changedByUserId: changedByUserId ?? null,
         },
       });
     });
