@@ -56,6 +56,9 @@ jobs:
       - name: Apply database migrations
         run: npx prisma migrate deploy
 
+      - name: Generate Next.js types
+        run: npx next typegen
+
       - name: Check TypeScript
         run: npx tsc --noEmit
 
