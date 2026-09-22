@@ -1,7 +1,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { randomInt, randomUUID } from "node:crypto";
+import { randomInt } from "node:crypto";
 
 import { registerCustomer } from "../../src/modules/customers/application/register-customer.ts";
 
