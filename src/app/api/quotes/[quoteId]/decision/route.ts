@@ -15,6 +15,10 @@ import type {
   InternalDecisionChannel,
 } from "../../../../../modules/quotes/application/quote-decision-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user";
+
 type RouteContext = {
   params: Promise<{
     quoteId: string;
@@ -31,6 +35,7 @@ const VALID_CHANNELS = [
   "PHONE",
   "WHATSAPP",
   "EMAIL",
+  "CUSTOMER_PORTAL",
 ] as const;
 
 function isDecision(
@@ -59,10 +64,12 @@ export async function POST(
   request: Request,
   { params }: RouteContext,
 ) {
-  if (process.env.NODE_ENV !== "development") {
+  const user = await getAuthenticatedInternalUser();
+
+  if (!user) {
     return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 
@@ -120,6 +127,7 @@ export async function POST(
         decision,
         channel,
         note,
+        changedByUserId: user.id,
       },
       repository,
     );

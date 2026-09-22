@@ -11,6 +11,10 @@ import {
   RepairQuoteNotFoundError,
 } from "../../../../../modules/quotes/infrastructure/prisma-repair-quote-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user";
+
 type RouteContext = {
   params: Promise<{
     repairId: string;
@@ -21,13 +25,12 @@ export async function POST(
   request: Request,
   { params }: RouteContext,
 ) {
-  // Restricción temporal mientras no exista
-  // autenticación y autorización de empleados.
+  const user = await getAuthenticatedInternalUser();
 
-  if (process.env.NODE_ENV !== "development") {
+  if (!user) {
     return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 

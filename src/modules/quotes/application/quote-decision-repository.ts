@@ -18,7 +18,8 @@ export type InternalDecisionChannel =
   | "IN_PERSON"
   | "PHONE"
   | "WHATSAPP"
-  | "EMAIL";
+  | "EMAIL"
+  | "CUSTOMER_PORTAL";
 
 export type QuoteDecisionContext = {
   quoteId: string;
@@ -34,6 +35,7 @@ export type SaveQuoteDecisionInput = {
   channel: InternalDecisionChannel;
   note: string | null;
   statusChange: RepairStatusChange;
+  changedByUserId?: string | null;
 };
 
 export interface QuoteDecisionRepository {

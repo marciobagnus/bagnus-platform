@@ -8,17 +8,20 @@ import { searchCustomers } from "../../../modules/customers/application/search-c
 
 import { PrismaCustomerSearchRepository } from "../../../modules/customers/infrastructure/prisma-customer-search-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../lib/current-internal-user.ts";
+
 export async function POST(request: Request) {
+  const user =
+  await getAuthenticatedInternalUser();
 
-  // Temporal: esta API no estará disponible
-  // en producción hasta implementar autenticación.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   let body: unknown;
 
@@ -135,18 +138,15 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const user =
+  await getAuthenticatedInternalUser();
 
-  // Temporal: búsqueda disponible solamente
-  // durante el desarrollo local.
-  // Antes del despliegue se necesitará autenticación
-  // y autorización para usuarios internos.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   const url = new URL(request.url);
 

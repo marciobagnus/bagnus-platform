@@ -10,6 +10,10 @@ import {
   PrismaQuoteSubmissionRepository,
 } from "../../../../../modules/quotes/infrastructure/prisma-quote-submission-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user";
+
 type RouteContext = {
   params: Promise<{
     quoteId: string;
@@ -20,14 +24,12 @@ export async function POST(
   request: Request,
   { params }: RouteContext,
 ) {
-  // Restricción temporal.
-  // Antes del uso real implementaremos autenticación
-  // y autorización de los empleados.
+  const user = await getAuthenticatedInternalUser();
 
-  if (process.env.NODE_ENV !== "development") {
+  if (!user) {
     return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 
@@ -72,6 +74,7 @@ export async function POST(
       {
         quoteId,
         note,
+        changedByUserId: user.id,
       },
       repository,
     );

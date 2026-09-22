@@ -5,6 +5,10 @@ import { getRepairOrder } from "../../../../modules/repairs/application/get-repa
 
 import { PrismaRepairOrderQueryRepository } from "../../../../modules/repairs/infrastructure/prisma-repair-order-query-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../lib/current-internal-user.ts";
+
 type RouteContext = {
   params: Promise<{
     repairId: string;
@@ -15,14 +19,12 @@ export async function GET(
   _request: Request,
   { params }: RouteContext,
 ) {
-  // Temporal: restringido al entorno de desarrollo.
-  // Antes de utilizar datos reales, implementar
-  // autenticación y autorización de usuarios internos.
+  const user = await getAuthenticatedInternalUser();
 
-  if (process.env.NODE_ENV !== "development") {
+  if (!user) {
     return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 

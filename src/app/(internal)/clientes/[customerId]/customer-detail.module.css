@@ -1,0 +1,262 @@
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #667085;
+  font-size: 14px;
+}
+
+.back:hover {
+  color: #101828;
+}
+
+.header {
+  margin-bottom: 22px;
+}
+
+.header h1 {
+  font-size: 28px;
+}
+
+.header p,
+.sectionHeader p {
+  margin-top: 5px;
+  color: #667085;
+}
+
+.customerCard {
+  padding: 22px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+}
+
+.customerCard dl {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.customerCard dt {
+  margin-bottom: 5px;
+  color: #667085;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.customerCard dd {
+  color: #101828;
+  font-size: 14px;
+}
+
+.machineSection {
+  margin-top: 30px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.sectionHeader h2 {
+  font-size: 21px;
+}
+
+.machineGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.machineCard {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+}
+
+.machineCard h3 {
+  margin: 5px 0;
+}
+
+.machineCard p {
+  color: #667085;
+  font-size: 13px;
+}
+
+.machineType {
+  color: #667085;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.machineCard > button {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  background: white;
+  color: #344054;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid #111827;
+  background: #111827;
+  color: white;
+}
+
+.secondaryButton {
+  border: 1px solid #d0d5dd;
+  background: white;
+  color: #344054;
+}
+
+.empty {
+  padding: 44px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+  text-align: center;
+}
+
+.empty p {
+  margin-top: 6px;
+  color: #667085;
+}
+
+.success,
+.error {
+  margin-bottom: 18px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.success {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.error {
+  background: #fff1f1;
+  color: #b42318;
+}
+
+.loading {
+  color: #667085;
+}
+
+.overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(16 24 40 / 45%);
+}
+
+.modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 26px;
+  border-radius: 14px;
+  background: white;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.modalHeader p {
+  margin-top: 4px;
+  color: #667085;
+}
+
+.modalHeader > button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.form label {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form input,
+.form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: white;
+  color: #101828;
+  font: inherit;
+  resize: vertical;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 800px) {
+  .customerCard dl,
+  .machineGrid,
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .machineCard {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

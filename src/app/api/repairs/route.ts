@@ -2,21 +2,49 @@
 import { NextResponse } from "next/server";
 
 import { registerRepairOrder } from "../../../modules/repairs/application/register-repair-order";
+import { PrismaRepairOrderQueryRepository } from "../../../modules/repairs/infrastructure/prisma-repair-order-query-repository";
 
 import { PrismaRepairOrderRepository } from "../../../modules/repairs/infrastructure/prisma-repair-order-repository";
 
-export async function POST(request: Request) {
+import {
+  getAuthenticatedInternalUser,
+} from "../../../lib/current-internal-user.ts";
 
-  // Temporal: restringido al entorno de desarrollo.
-  // Antes de utilizar datos reales, implementar
-  // autenticación y autorización de usuarios internos.
+export async function GET() {
+  const user = await getAuthenticatedInternalUser();
 
-  if (process.env.NODE_ENV !== "development") {
+  if (!user) {
     return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
+
+  try {
+    const repository = new PrismaRepairOrderQueryRepository();
+    const repairs = await repository.findRecent(100);
+
+    return NextResponse.json(repairs, { status: 200 });
+  } catch (error) {
+    console.error("Error al consultar reparaciones:", error);
+
+    return NextResponse.json(
+      { error: "No se pudieron consultar las reparaciones." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   // 1. Leer el cuerpo de la petición.
 

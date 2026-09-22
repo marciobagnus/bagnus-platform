@@ -1,0 +1,275 @@
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+
+.header h1 {
+  font-size: 28px;
+  letter-spacing: -0.4px;
+}
+
+.header p {
+  margin-top: 5px;
+  color: #667085;
+}
+
+.primaryButton,
+.secondaryButton,
+.search button {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryButton,
+.search button {
+  border: 1px solid #111827;
+  background: #111827;
+  color: white;
+}
+
+.secondaryButton {
+  border: 1px solid #d0d5dd;
+  background: white;
+  color: #344054;
+}
+
+.primaryButton:disabled,
+.search button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.panel {
+  padding: 18px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+}
+
+.search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.search input,
+.customerForm input {
+  width: 100%;
+  height: 43px;
+  padding: 0 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: white;
+  color: #101828;
+  font: inherit;
+}
+
+.search input:focus,
+.customerForm input:focus {
+  border-color: #667085;
+  outline: 3px solid rgb(102 112 133 / 10%);
+}
+
+.error,
+.success {
+  margin-top: 16px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.error {
+  background: #fff1f1;
+  color: #b42318;
+}
+
+.success {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.results {
+  margin-top: 18px;
+}
+
+.empty {
+  padding: 52px 24px;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+  text-align: center;
+}
+
+.empty strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.empty p {
+  color: #667085;
+  font-size: 14px;
+}
+
+.tableContainer {
+  overflow: hidden;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid #eaecf0;
+  text-align: left;
+}
+
+.table th {
+  background: #f9fafb;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.table td {
+  color: #344054;
+  font-size: 14px;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.actions {
+  width: 120px;
+  text-align: right !important;
+}
+
+.actions button {
+  border: 0;
+  background: transparent;
+  color: #98a2b3;
+  font: inherit;
+}
+
+.overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(16 24 40 / 45%);
+}
+
+.modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 26px;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 22%);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.modalHeader h2 {
+  font-size: 21px;
+}
+
+.modalHeader p {
+  margin-top: 5px;
+  color: #667085;
+  font-size: 14px;
+}
+
+.close {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #667085;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.customerForm {
+  display: grid;
+  gap: 18px;
+}
+
+.customerForm label {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+@media (max-width: 700px) {
+  .header {
+    display: grid;
+  }
+
+  .search {
+    grid-template-columns: 1fr;
+  }
+
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    display: none;
+  }
+}
+
+.detailLink {
+  color: #344054;
+  font-weight: 600;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}

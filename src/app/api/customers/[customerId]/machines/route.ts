@@ -5,6 +5,10 @@ import { listCustomerMachines } from "../../../../../modules/machines/applicatio
 
 import { PrismaMachineListRepository } from "../../../../../modules/machines/infrastructure/prisma-machine-list-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user.ts";
+
 type RouteContext = {
   params: Promise<{
     customerId: string;
@@ -15,15 +19,15 @@ export async function GET(
   _request: Request,
   { params }: RouteContext,
 ) {
-  // Temporal: el endpoint requiere autenticación
-  // y autorización antes de habilitarse en producción.
+  const user =
+  await getAuthenticatedInternalUser();
 
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   const { customerId } = await params;
 

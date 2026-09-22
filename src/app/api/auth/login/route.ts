@@ -15,15 +15,6 @@ import {
 } from "../../../../modules/users/infrastructure/session-cookie.ts";
 
 export async function POST(request: Request) {
-  // Por ahora, este endpoint solo se habilita
-  // en el entorno local de desarrollo.
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   let body: unknown;
 
   try {

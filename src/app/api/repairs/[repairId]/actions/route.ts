@@ -29,17 +29,6 @@ export async function POST(
   request: Request,
   { params }: RouteContext,
 ) {
-  // Temporal: solo disponible para pruebas locales.
-  // Antes del uso real se necesita autenticación
-  // y autorización de los empleados.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const user =
   await getAuthenticatedInternalUser();
 

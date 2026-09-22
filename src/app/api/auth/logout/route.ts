@@ -11,16 +11,10 @@ import {
 
 import {
   INTERNAL_SESSION_COOKIE,
+  sessionCookieOptions,
 } from "../../../../modules/users/infrastructure/session-cookie.ts";
 
 export async function POST() {
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const cookieStore = await cookies();
 
   const token = cookieStore.get(
@@ -42,13 +36,7 @@ export async function POST() {
   response.cookies.set(
     INTERNAL_SESSION_COOKIE,
     "",
-    {
-      httpOnly: true,
-      secure: false,
-      sameSite: "strict",
-      path: "/",
-      expires: new Date(0),
-    },
+    sessionCookieOptions(new Date(0)),
   );
 
   return response;
