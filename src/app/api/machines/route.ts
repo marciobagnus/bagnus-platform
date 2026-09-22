@@ -9,17 +9,6 @@ import {
   getAuthenticatedInternalUser,
 } from "../../../lib/current-internal-user.ts";
 export async function POST(request: Request) {
-  // Temporal: solamente disponible en desarrollo.
-  // Antes de utilizarlo con datos reales,
-  // implementaremos autenticación y autorización.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const user =
   await getAuthenticatedInternalUser();
 

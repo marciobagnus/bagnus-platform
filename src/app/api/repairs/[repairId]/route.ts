@@ -19,17 +19,6 @@ export async function GET(
   _request: Request,
   { params }: RouteContext,
 ) {
-  // Temporal: restringido al entorno de desarrollo.
-  // Antes de utilizar datos reales, implementar
-  // autenticación y autorización de usuarios internos.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const user = await getAuthenticatedInternalUser();
 
   if (!user) {

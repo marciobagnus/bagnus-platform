@@ -13,17 +13,6 @@ import {
 } from "../../../lib/current-internal-user.ts";
 
 export async function POST(request: Request) {
-
-  // Temporal: esta API no estará disponible
-  // en producción hasta implementar autenticación.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const user =
   await getAuthenticatedInternalUser();
 
@@ -149,19 +138,6 @@ if (!user) {
 }
 
 export async function GET(request: Request) {
-
-  // Temporal: búsqueda disponible solamente
-  // durante el desarrollo local.
-  // Antes del despliegue se necesitará autenticación
-  // y autorización para usuarios internos.
-
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const user =
   await getAuthenticatedInternalUser();
 

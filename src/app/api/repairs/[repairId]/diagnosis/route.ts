@@ -28,13 +28,6 @@ export async function POST(
   request: Request,
   { params }: RouteContext,
 ) {
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Endpoint no disponible." },
-      { status: 403 },
-    );
-  }
-
   const user =
     await getAuthenticatedInternalUser();
 
