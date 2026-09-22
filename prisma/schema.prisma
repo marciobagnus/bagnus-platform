@@ -75,6 +75,10 @@ model RepairOrder {
 
   quotes RepairQuote[]
 
+  payments Payment[]
+
+  diagnosisCharge DiagnosisCharge?
+
   @@index([machineId])
   @@index([status])
   @@map("repair_orders")
@@ -151,4 +155,52 @@ model QuoteDecision {
   @@unique([quoteId])
   @@index([quoteId])
   @@map("quote_decisions")
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
+model Payment {
+  id            String @id @db.Uuid
+  repairOrderId String @db.Uuid
+
+  amount   Decimal       @db.Decimal(12, 2)
+  currency String        @default("ARS")
+  method   PaymentMethod
+
+  reference String?
+  note      String?
+
+  receivedAt DateTime
+  createdAt  DateTime
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Restrict)
+
+  @@index([repairOrderId, receivedAt])
+  @@map("payments")
+}
+
+enum DiagnosisDecision {
+  CHARGED
+  WAIVED
+}
+
+model DiagnosisCharge {
+  id            String @id @db.Uuid
+  repairOrderId String @unique @db.Uuid
+
+  decision DiagnosisDecision
+  amount   Decimal           @db.Decimal(12, 2)
+  currency String            @default("ARS")
+
+  note      String?
+  decidedAt DateTime
+
+  repairOrder RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Restrict)
+
+  @@map("diagnosis_charges")
 }
