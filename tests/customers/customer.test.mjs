@@ -4,7 +4,9 @@ import { createCustomer } from "../../src/modules/customers/domain/customer.ts";
 
 const validInput = {
   id: "550e8400-e29b-41d4-a716-446655440000",
-  name: "Ana Pérez",
+  name: "Ana",
+  lastName: "Pérez",
+  dni: "30123456",
   phone: "+54 351 0123456",
   now: new Date("2026-09-21T12:00:00.000Z"),
 };
@@ -12,13 +14,17 @@ const validInput = {
 test("crea un cliente con sus datos y fechas iniciales", () => {
   const customer = createCustomer(validInput);
 
-  assert.deepEqual(customer, {
-    id: validInput.id,
-    name: validInput.name,
-    phone: validInput.phone,
-    createdAt: validInput.now,
-    updatedAt: validInput.now,
-  });
+assert.deepEqual(customer, {
+  id: validInput.id,
+  name: validInput.name,
+  lastName: validInput.lastName,
+  dni: validInput.dni,
+  phone: validInput.phone,
+  email: null,
+  address: null,
+  createdAt: validInput.now,
+  updatedAt: validInput.now,
+});
 });
 
 test("elimina espacios en los extremos del nombre y teléfono", () => {
