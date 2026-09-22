@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { randomUUID } from "node:crypto";
 
 import { registerCustomer } from "../../src/modules/customers/application/register-customer.ts";
 
@@ -10,10 +9,6 @@ import { prisma } from "../../src/lib/prisma.ts";
 
 test("registra un cliente completo en PostgreSQL", async () => {
   const repository = new PrismaCustomerRepository();
-
-  // Generamos un teléfono y un DNI exclusivos para cada ejecución.
-  // Así evitamos conflictos con registros de pruebas anteriores.
-  const uniqueValue = randomUUID().replace(/\D/g, "").slice(0, 8);
 
   // Como un UUID podría contener pocos números, usamos
   // un valor aleatorio numérico de ocho dígitos.
