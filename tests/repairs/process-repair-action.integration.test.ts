@@ -109,6 +109,45 @@ test(
 
           assert.equal(ordersBeforeDelivery, 1);
 
+          await prisma.repairQuote.create({
+  data: {
+    id: randomUUID(),
+    repairOrderId: firstRepairId,
+    version: 1,
+    description: "Presupuesto de prueba de entrega.",
+    totalAmount: "5000.00",
+    status:
+      scenario.initialStatus === "READY_FOR_PICKUP"
+        ? "APPROVED"
+        : "REJECTED",
+    createdAt: now,
+    updatedAt: now,
+  },
+});
+
+if (scenario.initialStatus === "READY_FOR_PICKUP") {
+  await prisma.payment.create({
+    data: {
+      id: randomUUID(),
+      repairOrderId: firstRepairId,
+      amount: "5000.00",
+      method: "CASH",
+      receivedAt: now,
+      createdAt: now,
+    },
+  });
+} else {
+  await prisma.diagnosisCharge.create({
+    data: {
+      id: randomUUID(),
+      repairOrderId: firstRepairId,
+      decision: "WAIVED",
+      amount: "0.00",
+      decidedAt: now,
+    },
+  });
+}
+
           // 3. Registrar la entrega física de la máquina.
 
           const result = await processRepairAction(
@@ -232,6 +271,18 @@ test(
               repairOrderId: { in: repairIds },
             },
           });
+
+          await prisma.payment.deleteMany({
+  where: { repairOrderId: { in: repairIds } },
+});
+
+await prisma.diagnosisCharge.deleteMany({
+  where: { repairOrderId: { in: repairIds } },
+});
+
+await prisma.repairQuote.deleteMany({
+  where: { repairOrderId: { in: repairIds } },
+});
 
           await prisma.repairOrder.deleteMany({
             where: { machineId },
