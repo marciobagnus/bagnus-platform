@@ -11,6 +11,10 @@ import {
   RepairQuoteNotFoundError,
 } from "../../../../../modules/quotes/infrastructure/prisma-repair-quote-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user";
+
 type RouteContext = {
   params: Promise<{
     repairId: string;
@@ -28,6 +32,15 @@ export async function POST(
     return NextResponse.json(
       { error: "Endpoint no disponible." },
       { status: 403 },
+    );
+  }
+
+  const user = await getAuthenticatedInternalUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 

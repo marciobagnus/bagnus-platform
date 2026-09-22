@@ -120,6 +120,7 @@ export class PrismaQuoteSubmissionRepository
           note: statusChange.note,
 
           changedAt: statusChange.changedAt,
+          changedByUserId: input.changedByUserId ?? null,
         },
       });
 

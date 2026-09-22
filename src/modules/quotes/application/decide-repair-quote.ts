@@ -27,6 +27,7 @@ export type DecideRepairQuoteInput = {
   decision: QuoteDecision;
   channel: InternalDecisionChannel;
   note?: string | null;
+  changedByUserId?: string | null;
 };
 
 export async function decideRepairQuote(
@@ -85,6 +86,7 @@ export async function decideRepairQuote(
     channel: input.channel,
     note: input.note?.trim() || null,
     statusChange,
+    changedByUserId: input.changedByUserId,
   });
 
   return {

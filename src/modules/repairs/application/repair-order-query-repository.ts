@@ -5,6 +5,22 @@ import type {
 } from "../domain/repair-order.ts";
 
 export type RepairOrderDetails = RepairOrder & {
+  quotes: {
+    id: string;
+    version: number;
+    description: string;
+    totalAmount: unknown;
+    currency: string;
+    status: string;
+    createdAt: Date;
+    decisions: {
+      approved: boolean;
+      channel: string;
+      note: string | null;
+      decidedAt: Date;
+    }[];
+  }[];
+
   machine: {
     id: string;
     brand: string;

@@ -10,6 +10,10 @@ import {
   PrismaQuoteSubmissionRepository,
 } from "../../../../../modules/quotes/infrastructure/prisma-quote-submission-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user";
+
 type RouteContext = {
   params: Promise<{
     quoteId: string;
@@ -28,6 +32,15 @@ export async function POST(
     return NextResponse.json(
       { error: "Endpoint no disponible." },
       { status: 403 },
+    );
+  }
+
+  const user = await getAuthenticatedInternalUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "No autenticado." },
+      { status: 401 },
     );
   }
 
@@ -72,6 +85,7 @@ export async function POST(
       {
         quoteId,
         note,
+        changedByUserId: user.id,
       },
       repository,
     );

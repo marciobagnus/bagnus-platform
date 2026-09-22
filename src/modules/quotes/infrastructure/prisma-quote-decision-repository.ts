@@ -60,6 +60,7 @@ export class PrismaQuoteDecisionRepository
       channel,
       note,
       statusChange,
+      changedByUserId,
     } = input;
 
     await prisma.$transaction(async (tx) => {
@@ -135,6 +136,7 @@ export class PrismaQuoteDecisionRepository
 
           note: statusChange.note,
           changedAt: statusChange.changedAt,
+          changedByUserId: changedByUserId ?? null,
         },
       });
 

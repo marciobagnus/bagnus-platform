@@ -21,6 +21,7 @@ export type SaveQuoteSubmissionInput = {
   quoteId: string;
   repairOrderId: string;
   statusChange: RepairStatusChange;
+  changedByUserId?: string | null;
 };
 
 export interface QuoteSubmissionRepository {

@@ -23,6 +23,7 @@ export class QuoteSubmissionConflictError extends Error {
 export type SubmitRepairQuoteInput = {
   quoteId: string;
   note?: string | null;
+  changedByUserId?: string | null;
 };
 
 export async function submitRepairQuote(
@@ -81,6 +82,7 @@ export async function submitRepairQuote(
     quoteId: context.quoteId,
     repairOrderId: context.repairOrderId,
     statusChange,
+    changedByUserId: input.changedByUserId,
   });
 
   return {

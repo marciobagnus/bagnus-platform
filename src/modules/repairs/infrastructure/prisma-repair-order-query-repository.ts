@@ -47,6 +47,21 @@ export class PrismaRepairOrderQueryRepository
       },
 
       include: {
+        quotes: {
+          orderBy: {
+            version: "desc",
+          },
+          include: {
+            decisions: {
+              select: {
+                approved: true,
+                channel: true,
+                note: true,
+                decidedAt: true,
+              },
+            },
+          },
+        },
         machine: {
           select: {
             id: true,
