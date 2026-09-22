@@ -13,6 +13,10 @@ import {
   PrismaRepairStatusRepository,
 } from "../../../../../modules/repairs/infrastructure/prisma-repair-status-repository";
 
+import {
+  getAuthenticatedInternalUser,
+} from "../../../../../lib/current-internal-user";
+
 type RouteContext = {
   params: Promise<{
     repairId: string;
@@ -52,6 +56,16 @@ export async function PATCH(
       { status: 403 },
     );
   }
+
+  const user =
+  await getAuthenticatedInternalUser();
+
+if (!user) {
+  return NextResponse.json(
+    { error: "No autenticado." },
+    { status: 401 },
+  );
+}
 
   // 1. Obtener el identificador de la reparación.
 
@@ -128,6 +142,7 @@ if (status !== "DIAGNOSING") {
         repairId,
         newStatus: status,
         note,
+        changedByUserId: user.id,
       },
       repository,
     );

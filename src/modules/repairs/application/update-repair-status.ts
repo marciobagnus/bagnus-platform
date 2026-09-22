@@ -32,6 +32,7 @@ export type UpdateRepairStatusInput = {
   repairId: string;
   newStatus: RepairStatus;
   note?: string | null;
+  changedByUserId?: string | null;
 };
 
 export async function updateRepairStatus(
@@ -76,5 +77,6 @@ export async function updateRepairStatus(
     repairId,
     currentStatus,
     change,
+    input.changedByUserId ?? null,
   );
 }

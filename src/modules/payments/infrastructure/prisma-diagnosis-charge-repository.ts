@@ -26,8 +26,9 @@ export class PrismaDiagnosisChargeRepository
   implements DiagnosisChargeRepository {
 
   async saveDecision(
-    charge: DiagnosisCharge,
-  ): Promise<void> {
+  charge: DiagnosisCharge,
+  decidedByUserId?: string | null,
+): Promise<void> {
     await prisma.$transaction(async (tx) => {
       // 1. Comprobar que la reparación existe.
       const repair = await tx.repairOrder.findUnique({
@@ -114,6 +115,7 @@ export class PrismaDiagnosisChargeRepository
           currency: charge.currency,
           note: charge.note,
           decidedAt: charge.decidedAt,
+          decidedByUserId: decidedByUserId ?? null,
         },
       });
     });

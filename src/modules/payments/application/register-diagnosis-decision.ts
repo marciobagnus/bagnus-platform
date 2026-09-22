@@ -15,6 +15,7 @@ export type RegisterDiagnosisDecisionInput = {
   decision: DiagnosisDecision;
   amount?: string | null;
   note?: string | null;
+  decidedByUserId?: string | null;
 };
 
 export async function registerDiagnosisDecision(
@@ -30,7 +31,10 @@ export async function registerDiagnosisDecision(
     now: new Date(),
   });
 
-  await repository.saveDecision(charge);
+  await repository.saveDecision(
+  charge,
+  input.decidedByUserId ?? null,
+);
 
   return charge;
 }

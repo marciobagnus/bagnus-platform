@@ -16,7 +16,10 @@ export class PaymentConflictError extends Error {
 }
 
 export class PrismaPaymentRepository implements PaymentRepository {
-  async add(payment: Payment): Promise<void> {
+  async add(
+  payment: Payment,
+  recordedByUserId?: string | null,
+): Promise<void> {
     await prisma.$transaction(async (tx) => {
       // Bloquear la reparación mientras calculamos el saldo
       // y registramos el pago.
@@ -114,6 +117,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
           note: payment.note,
           receivedAt: payment.receivedAt,
           createdAt: payment.createdAt,
+          recordedByUserId: recordedByUserId ?? null,
         },
       });
     });
