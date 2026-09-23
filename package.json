@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test"
+    "test": "node --test",
+    "db:e2e:migrate": "node --import tsx scripts/migrate-e2e.ts",
+    "db:e2e:user": "node --import tsx scripts/create-e2e-user.ts",
+    "test:e2e": "node --import tsx scripts/e2e-env.ts --check-only && playwright test --config=playwright.config.ts",
+    "test:e2e:headed": "node --import tsx scripts/e2e-env.ts --check-only && playwright test --config=playwright.config.ts --headed"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
@@ -20,6 +24,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
