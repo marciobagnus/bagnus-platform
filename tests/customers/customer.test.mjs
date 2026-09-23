@@ -94,3 +94,12 @@ test("permite crear clientes diferentes con el mismo teléfono", () => {
   assert.notEqual(first.id, second.id);
   assert.equal(first.phone, second.phone);
 });
+
+test("guarda el celular argentino nacional en formato canónico", () => {
+  const customer = createCustomer({
+    ...validInput,
+    phone: "0351 15 1234567",
+  });
+
+  assert.equal(customer.phone, "5493511234567");
+});

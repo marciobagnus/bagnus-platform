@@ -14,6 +14,11 @@ import {
   getRepairStatusLabel,
   type RepairStatus,
 } from "../repair-status";
+import {
+  buildFinishedRepairWhatsAppMessage,
+  buildQuoteWhatsAppMessage,
+  buildWhatsAppLink,
+} from "../../../../lib/whatsapp";
 
 type PaymentMethod = "CASH" | "TRANSFER" | "CARD" | "OTHER";
 type DiagnosisDecision = "CHARGED" | "WAIVED";
@@ -410,6 +415,19 @@ export default function RepairDetailPage({
   const customer = repair.machine.customer;
   const customerName = [customer.name, customer.lastName].filter(Boolean).join(" ");
   const currentQuote = repair.quotes[0] ?? null;
+  const whatsappData = {
+    customerName,
+    brand: repair.machine.brand,
+    model: repair.machine.model,
+  };
+  const quoteWhatsAppLink = buildWhatsAppLink(
+    customer.phone,
+    buildQuoteWhatsAppMessage(whatsappData),
+  );
+  const finishedWhatsAppLink = buildWhatsAppLink(
+    customer.phone,
+    buildFinishedRepairWhatsAppMessage(whatsappData),
+  );
 
   return (
     <section className={styles.page}>
@@ -538,6 +556,20 @@ export default function RepairDetailPage({
         {repair.status === "WAITING_APPROVAL" && currentQuote && (
           <div className={styles.actionStack}>
             <QuoteSummary quote={currentQuote} />
+            {quoteWhatsAppLink ? (
+              <a
+                className={styles.whatsappButton}
+                href={quoteWhatsAppLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Enviar aviso por WhatsApp
+              </a>
+            ) : (
+              <p className={styles.whatsappHint}>
+                El teléfono no es un celular argentino válido para WhatsApp. Editá la ficha del cliente e ingresá código de área y número celular.
+              </p>
+            )}
             <button
               className={styles.primaryButton}
               type="button"
@@ -564,9 +596,25 @@ export default function RepairDetailPage({
         )}
 
         {repair.status === "READY_FOR_PICKUP" && (
-          <p className={styles.actionMessage}>
-            Reparación finalizada. Pendiente de cobro y entrega.
-          </p>
+          <div className={styles.actionStack}>
+            <p className={styles.actionMessage}>
+              Reparación finalizada. Pendiente de cobro y entrega.
+            </p>
+            {finishedWhatsAppLink ? (
+              <a
+                className={styles.whatsappButton}
+                href={finishedWhatsAppLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Avisar por WhatsApp
+              </a>
+            ) : (
+              <p className={styles.whatsappHint}>
+                El teléfono no es un celular argentino válido para WhatsApp. Editá la ficha del cliente e ingresá código de área y número celular.
+              </p>
+            )}
+          </div>
         )}
 
         {repair.status === "AWAITING_PICKUP_UNREPAIRED" && (

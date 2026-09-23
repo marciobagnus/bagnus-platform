@@ -75,11 +75,6 @@ test("rechaza datos obligatorios o formatos inválidos", async () => {
     },
     {
       field: "dni",
-      value: "   ",
-      error: /DNI/,
-    },
-    {
-      field: "dni",
       value: "12ABC456",
       error: /DNI/,
     },
@@ -144,4 +139,18 @@ test("propaga el error cuando falla el repositorio", async () => {
     registerCustomer(validCustomerInput(), repository),
     /Error de persistencia/,
   );
+});
+
+test("permite registrar un cliente sin DNI", async () => {
+  const repository = createFakeRepository();
+
+  const customer = await registerCustomer(
+    {
+      ...validCustomerInput(),
+      dni: "   ",
+    },
+    repository,
+  );
+
+  assert.equal(customer.dni, null);
 });

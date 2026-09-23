@@ -28,7 +28,8 @@ test("busca clientes reales por sus diferentes datos", async () => {
 
   const dni = randomInt(10000000, 99999999).toString();
 
-  const phone = `351${Date.now()}${randomInt(100, 999)}`;
+  const phone = `0351 15 ${String(Date.now()).slice(-7)}`;
+  const canonicalPhone = `549351${phone.slice(-7)}`;
 
   const email = `busqueda.${uniqueId}@example.com`;
 
@@ -75,7 +76,7 @@ test("busca clientes reales por sus diferentes datos", async () => {
 
       assert.equal(found.name, name);
       assert.equal(found.lastName, lastName);
-      assert.equal(found.phone, phone);
+      assert.equal(found.phone, canonicalPhone);
     }
 
     // 3. Verificar que también acepta DNI con puntos.

@@ -238,6 +238,29 @@
   font-size: 14px;
 }
 
+.whatsappButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #087f5b;
+  border-radius: 8px;
+  background: #099268;
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.whatsappButton:hover {
+  background: #087f5b;
+}
+
+.whatsappHint {
+  color: #b54708;
+  font-size: 14px;
+}
+
 .formError {
   margin-bottom: 16px;
   padding: 11px 14px;

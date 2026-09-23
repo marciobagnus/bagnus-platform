@@ -2,13 +2,15 @@ export type Customer = {
   id: string;
   name: string;
   lastName: string;
-  dni: string;
+  dni: string | null;
   phone: string;
   email: string | null;
   address: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
+
+import { normalizeCustomerPhone } from "./customer-phone.ts";
 
 type CreateCustomerInput = {
   id: string;
@@ -30,7 +32,7 @@ export function createCustomer(
   // Normalizamos el DNI eliminando espacios y puntos.
   const dni = input.dni.replace(/[\s.]/g, "");
 
-  const phone = input.phone.trim();
+  const phone = normalizeCustomerPhone(input.phone);
 
   const email =
     input.email?.trim().toLowerCase() || null;
@@ -50,7 +52,7 @@ export function createCustomer(
     );
   }
 
-  if (!/^\d+$/.test(dni)) {
+  if (dni.length > 0 && !/^\d+$/.test(dni)) {
     throw new Error(
       "El DNI debe contener únicamente números.",
     );
@@ -84,7 +86,7 @@ export function createCustomer(
     id: input.id,
     name,
     lastName,
-    dni,
+    dni: dni || null,
     phone,
     email,
     address,

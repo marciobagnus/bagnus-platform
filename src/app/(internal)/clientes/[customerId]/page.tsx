@@ -10,11 +10,16 @@ import {
 } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   getRepairStatusLabel,
   type RepairStatus,
 } from "../../reparaciones/repair-status";
+import {
+  buildArgentineMobilePhone,
+  parseArgentineMobilePhone,
+} from "../../../../modules/customers/domain/customer-phone";
 
 import styles from "./customer-detail.module.css";
 
@@ -46,6 +51,8 @@ type MachineForm = {
   type: string;
   model: string;
   serialNumber: string;
+  reportedIssue: string;
+  receivedAccessories: string;
 };
 
 const EMPTY_MACHINE: MachineForm = {
@@ -53,6 +60,20 @@ const EMPTY_MACHINE: MachineForm = {
   type: "",
   model: "",
   serialNumber: "",
+  reportedIssue: "",
+  receivedAccessories: "",
+};
+
+type CustomerForm = {
+  name: string;
+  lastName: string;
+  dni: string;
+  phoneMode: "argentine" | "manual";
+  areaCode: string;
+  mobileNumber: string;
+  manualPhone: string;
+  email: string;
+  address: string;
 };
 
 export default function CustomerDetailPage({
@@ -63,6 +84,7 @@ export default function CustomerDetailPage({
   }>;
 }) {
   const { customerId } = use(params);
+  const router = useRouter();
 
   const [customer, setCustomer] =
     useState<Customer | null>(null);
@@ -82,6 +104,18 @@ export default function CustomerDetailPage({
   const [success, setSuccess] =
     useState("");
 
+  const [showCustomerForm, setShowCustomerForm] =
+    useState(false);
+
+  const [customerForm, setCustomerForm] =
+    useState<CustomerForm | null>(null);
+
+  const [customerFormError, setCustomerFormError] =
+    useState("");
+
+  const [savingCustomer, setSavingCustomer] =
+    useState(false);
+
   const [showMachineForm, setShowMachineForm] =
     useState(false);
 
@@ -91,24 +125,18 @@ export default function CustomerDetailPage({
   const [savingMachine, setSavingMachine] =
     useState(false);
 
+  const [machineAction, setMachineAction] =
+    useState<"machine" | "intake">("machine");
+
+  const [reportedIssue, setReportedIssue] = useState("");
+  const [receivedAccessories, setReceivedAccessories] = useState("");
+  const [repairError, setRepairError] = useState("");
+  const [savingRepair, setSavingRepair] = useState(false);
+
   const [
     repairMachine,
     setRepairMachine,
   ] = useState<Machine | null>(null);
-
-  const [reportedIssue, setReportedIssue] =
-    useState("");
-
-  const [
-    receivedAccessories,
-    setReceivedAccessories,
-  ] = useState("");
-
-  const [repairError, setRepairError] =
-    useState("");
-
-  const [savingRepair, setSavingRepair] =
-    useState(false);
 
   const isMountedRef = useRef(false);
 
@@ -216,6 +244,106 @@ export default function CustomerDetailPage({
     }));
   }
 
+  function updateCustomerField(
+    field: keyof CustomerForm,
+    value: string,
+  ) {
+    setCustomerForm((current) =>
+      current === null
+        ? current
+        : { ...current, [field]: value },
+    );
+  }
+
+  function openCustomerForm() {
+    if (!customer) {
+      return;
+    }
+
+    setCustomerForm({
+      name: customer.name,
+      lastName: customer.lastName ?? "",
+      dni: customer.dni ?? "",
+      ...(parseArgentineMobilePhone(customer.phone)
+        ? {
+            phoneMode: "argentine" as const,
+            areaCode: parseArgentineMobilePhone(customer.phone)!.areaCode,
+            mobileNumber: parseArgentineMobilePhone(customer.phone)!.mobileNumber,
+            manualPhone: "",
+          }
+        : {
+            phoneMode: "manual" as const,
+            areaCode: "",
+            mobileNumber: "",
+            manualPhone: customer.phone,
+          }),
+      email: customer.email ?? "",
+      address: customer.address ?? "",
+    });
+    setCustomerFormError("");
+    setShowCustomerForm(true);
+  }
+
+  async function saveCustomer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!customerForm) {
+      return;
+    }
+
+    setCustomerFormError("");
+    setSavingCustomer(true);
+
+    const phone = customerForm.phoneMode === "argentine"
+      ? buildArgentineMobilePhone(
+          customerForm.areaCode,
+          customerForm.mobileNumber,
+        )
+      : customerForm.manualPhone.trim();
+
+    if (!phone) {
+      setCustomerFormError(
+        customerForm.phoneMode === "argentine"
+          ? "Ingresá un código de área de 2 a 4 dígitos y un número de celular válido."
+          : "Ingresá un teléfono válido.",
+      );
+      setSavingCustomer(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: customerForm.name,
+          lastName: customerForm.lastName,
+          dni: customerForm.dni,
+          phone,
+          email: customerForm.email,
+          address: customerForm.address,
+        }),
+      });
+      const body = await response.json();
+
+      if (!response.ok) {
+        setCustomerFormError(
+          body.error ?? "No se pudieron actualizar los datos.",
+        );
+        return;
+      }
+
+      setCustomer(body as Customer);
+      setShowCustomerForm(false);
+      setCustomerForm(null);
+      setSuccess("Datos del cliente actualizados correctamente");
+    } catch {
+      setCustomerFormError("No se pudo conectar con el servidor.");
+    } finally {
+      setSavingCustomer(false);
+    }
+  }
+
   async function createMachine(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -224,9 +352,13 @@ export default function CustomerDetailPage({
     setFormError("");
     setSavingMachine(true);
 
+    const submitter = (event.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement | null;
+    const startRepair = submitter?.value === "intake";
+
     try {
       const response = await fetch(
-        "/api/machines",
+        startRepair ? "/api/machines/intake" : "/api/machines",
         {
           method: "POST",
 
@@ -235,23 +367,26 @@ export default function CustomerDetailPage({
               "application/json",
           },
 
-          body: JSON.stringify({
-            customerId,
-
-            brand:
-              machineForm.brand,
-
-            type:
-              machineForm.type,
-
-            model:
-              machineForm.model.trim() ||
-              null,
-
-            serialNumber:
-              machineForm.serialNumber.trim() ||
-              null,
-          }),
+          body: JSON.stringify(
+            startRepair
+              ? {
+                  customerId,
+                  brand: machineForm.brand,
+                  type: machineForm.type,
+                  model: machineForm.model.trim() || null,
+                  serialNumber: machineForm.serialNumber.trim() || null,
+                  reportedIssue: machineForm.reportedIssue,
+                  receivedAccessories:
+                    machineForm.receivedAccessories.trim() || null,
+                }
+              : {
+                  customerId,
+                  brand: machineForm.brand,
+                  type: machineForm.type,
+                  model: machineForm.model.trim() || null,
+                  serialNumber: machineForm.serialNumber.trim() || null,
+                },
+          ),
         },
       );
 
@@ -264,6 +399,11 @@ export default function CustomerDetailPage({
             "No se pudo registrar la máquina.",
         );
 
+        return;
+      }
+
+      if (startRepair) {
+        router.push(`/reparaciones/${body.repair.id}`);
         return;
       }
 
@@ -284,9 +424,7 @@ export default function CustomerDetailPage({
     }
   }
 
-  async function createRepair(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function createRepair(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!repairMachine) {
@@ -297,45 +435,27 @@ export default function CustomerDetailPage({
     setSavingRepair(true);
 
     try {
-      const response = await fetch(
-        "/api/repairs",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            machineId:
-              repairMachine.id,
-
-            reportedIssue,
-
-            receivedAccessories:
-              receivedAccessories.trim() ||
-              null,
-          }),
-        },
-      );
-
-      const body =
-        await response.json();
+      const response = await fetch("/api/repairs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          machineId: repairMachine.id,
+          reportedIssue,
+          receivedAccessories: receivedAccessories.trim() || null,
+        }),
+      });
+      const body = await response.json();
 
       if (!response.ok) {
         setRepairError(
-          body.error ??
-            "No se pudo registrar la reparación.",
+          body.error ?? "No se pudo registrar la reparación.",
         );
-
         return;
       }
 
       setRepairMachine(null);
       setReportedIssue("");
       setReceivedAccessories("");
-
       setMachines((current) =>
         current.map((machine) =>
           machine.id === repairMachine.id
@@ -349,18 +469,14 @@ export default function CustomerDetailPage({
             : machine,
         ),
       );
-
-      setSuccess(
-        "Reparación ingresada correctamente.",
-      );
+      setSuccess("Reparación ingresada correctamente.");
     } catch {
-      setRepairError(
-        "No se pudo conectar con el servidor.",
-      );
+      setRepairError("No se pudo conectar con el servidor.");
     } finally {
       setSavingRepair(false);
     }
   }
+
 
   if (loading) {
     return (
@@ -410,6 +526,14 @@ export default function CustomerDetailPage({
             Ficha del cliente y sus máquinas.
           </p>
         </div>
+
+        <button
+          type="button"
+          className={styles.primaryButton}
+          onClick={openCustomerForm}
+        >
+          Editar cliente
+        </button>
       </header>
 
       {success && (
@@ -450,6 +574,169 @@ export default function CustomerDetailPage({
         </dl>
       </section>
 
+      {showCustomerForm && customerForm && (
+        <div className={styles.overlay}>
+          <section className={styles.modal}>
+            <header className={styles.modalHeader}>
+              <div>
+                <h2>Editar cliente</h2>
+                <p>Actualizá los datos del cliente.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCustomerForm(false)}
+                aria-label="Cerrar"
+              >
+                ×
+              </button>
+            </header>
+
+            {customerFormError && (
+              <div className={styles.error}>{customerFormError}</div>
+            )}
+
+            <form className={styles.form} onSubmit={saveCustomer}>
+              <div className={styles.twoColumns}>
+                <label>
+                  Nombre
+                  <input
+                    value={customerForm.name}
+                    onChange={(event) =>
+                      updateCustomerField("name", event.target.value)
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  Apellido
+                  <input
+                    value={customerForm.lastName}
+                    onChange={(event) =>
+                      updateCustomerField("lastName", event.target.value)
+                    }
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className={styles.twoColumns}>
+                <label>
+                  DNI
+                  <input
+                    inputMode="numeric"
+                    value={customerForm.dni}
+                    onChange={(event) =>
+                      updateCustomerField("dni", event.target.value)
+                    }
+                  />
+                </label>
+                <div className={styles.phoneField}>
+                  Teléfono celular argentino
+                  {customerForm.phoneMode === "argentine" ? (
+                    <div className={styles.phoneFields}>
+                      <label className={styles.phonePart}>
+                        <span>Código de área</span>
+                        <span className={styles.phoneInputGroup}>
+                          <span className={styles.phonePrefix}>0</span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            value={customerForm.areaCode}
+                            onChange={(event) =>
+                              updateCustomerField("areaCode", event.target.value.replace(/\D/g, ""))
+                            }
+                            required
+                            aria-label="Código de área sin cero"
+                          />
+                        </span>
+                      </label>
+                      <label className={styles.phonePart}>
+                        <span>Número de celular</span>
+                        <span className={styles.phoneInputGroup}>
+                          <span className={styles.phonePrefix}>15</span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            value={customerForm.mobileNumber}
+                            onChange={(event) =>
+                              updateCustomerField("mobileNumber", event.target.value.replace(/\D/g, ""))
+                            }
+                            required
+                            aria-label="Número de celular sin 15"
+                          />
+                        </span>
+                      </label>
+                    </div>
+                  ) : (
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      value={customerForm.manualPhone}
+                      onChange={(event) =>
+                        updateCustomerField("manualPhone", event.target.value)
+                      }
+                      required
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className={styles.phoneModeButton}
+                    onClick={() =>
+                      updateCustomerField(
+                        "phoneMode",
+                        customerForm.phoneMode === "argentine" ? "manual" : "argentine",
+                      )
+                    }
+                  >
+                    {customerForm.phoneMode === "argentine"
+                      ? "Ingresar otro formato"
+                      : "Usar celular argentino"}
+                  </button>
+                </div>
+              </div>
+
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={customerForm.email}
+                  onChange={(event) =>
+                    updateCustomerField("email", event.target.value)
+                  }
+                />
+              </label>
+
+              <label>
+                Dirección
+                <input
+                  value={customerForm.address}
+                  onChange={(event) =>
+                    updateCustomerField("address", event.target.value)
+                  }
+                />
+              </label>
+
+              <footer className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setShowCustomerForm(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={savingCustomer}
+                >
+                  {savingCustomer ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
+
       <section className={styles.machineSection}>
         <header className={styles.sectionHeader}>
           <div>
@@ -467,6 +754,7 @@ export default function CustomerDetailPage({
             onClick={() => {
               setMachineForm(EMPTY_MACHINE);
               setFormError("");
+              setMachineAction("machine");
               setShowMachineForm(true);
             }}
           >
@@ -648,6 +936,33 @@ export default function CustomerDetailPage({
                 </label>
               </div>
 
+              <h3>Ingreso al taller</h3>
+
+              <label>
+                Problema informado por el cliente
+                <textarea
+                  rows={4}
+                  value={machineForm.reportedIssue}
+                  onChange={(event) =>
+                    updateMachine("reportedIssue", event.target.value)
+                  }
+                  placeholder="Ej: corta el hilo, no arrastra..."
+                  required={machineAction === "intake"}
+                />
+              </label>
+
+              <label>
+                Accesorios recibidos
+                <textarea
+                  rows={3}
+                  value={machineForm.receivedAccessories}
+                  onChange={(event) =>
+                    updateMachine("receivedAccessories", event.target.value)
+                  }
+                  placeholder="Ej: pedal, cable, funda..."
+                />
+              </label>
+
               <footer
                 className={
                   styles.modalActions
@@ -671,10 +986,20 @@ export default function CustomerDetailPage({
                     styles.primaryButton
                   }
                   disabled={savingMachine}
+                  value="machine"
+                  onClick={() => setMachineAction("machine")}
                 >
-                  {savingMachine
-                    ? "Guardando..."
-                    : "Guardar máquina"}
+                  Guardar solo máquina
+                </button>
+
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={savingMachine}
+                  value="intake"
+                  onClick={() => setMachineAction("intake")}
+                >
+                  {savingMachine ? "Guardando..." : "Guardar e iniciar reparación"}
                 </button>
               </footer>
             </form>

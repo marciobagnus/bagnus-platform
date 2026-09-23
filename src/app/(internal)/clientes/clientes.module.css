@@ -224,6 +224,50 @@
   gap: 18px;
 }
 
+.phoneFields {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1fr);
+  gap: 12px;
+}
+
+.phonePart {
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.phoneInputGroup {
+  display: flex;
+  align-items: stretch;
+}
+
+.phonePrefix {
+  display: inline-grid;
+  min-width: 34px;
+  place-items: center;
+  border: 1px solid #d0d5dd;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: #f9fafb;
+  color: #667085;
+  font-weight: 700;
+}
+
+.phoneInputGroup input {
+  border-radius: 0 8px 8px 0;
+}
+
+.phoneModeButton {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #344054;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .customerForm label {
   display: grid;
   gap: 7px;
@@ -238,6 +282,10 @@
     repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
+
+  .phoneFields {
+    grid-template-columns: 1fr;
+  }
 
 .modalActions {
   display: flex;
@@ -272,4 +320,12 @@
 
 .detailLink:hover {
   text-decoration: underline;
+}
+
+.phoneField {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
 }
