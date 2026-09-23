@@ -11,6 +11,11 @@ import {
 
 import Link from "next/link";
 
+import {
+  getRepairStatusLabel,
+  type RepairStatus,
+} from "../../reparaciones/repair-status";
+
 import styles from "./customer-detail.module.css";
 
 type Customer = {
@@ -30,6 +35,10 @@ type Machine = {
   type: string;
   model: string | null;
   serialNumber: string | null;
+  openRepair: {
+    id: string;
+    status: RepairStatus;
+  } | null;
 };
 
 type MachineForm = {
@@ -327,6 +336,20 @@ export default function CustomerDetailPage({
       setReportedIssue("");
       setReceivedAccessories("");
 
+      setMachines((current) =>
+        current.map((machine) =>
+          machine.id === repairMachine.id
+            ? {
+                ...machine,
+                openRepair: {
+                  id: body.id as string,
+                  status: body.status as RepairStatus,
+                },
+              }
+            : machine,
+        ),
+      );
+
       setSuccess(
         "Reparación ingresada correctamente.",
       );
@@ -492,17 +515,28 @@ export default function CustomerDetailPage({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRepairError("");
-                    setReportedIssue("");
-                    setReceivedAccessories("");
-                    setRepairMachine(machine);
-                  }}
-                >
-                  Iniciar reparación
-                </button>
+                {machine.openRepair ? (
+                  <div className={styles.openRepair}>
+                    <span className={styles.openRepairStatus}>
+                      {getRepairStatusLabel(machine.openRepair.status)}
+                    </span>
+                    <Link href={`/reparaciones/${machine.openRepair.id}`}>
+                      Ver reparación
+                    </Link>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRepairError("");
+                      setReportedIssue("");
+                      setReceivedAccessories("");
+                      setRepairMachine(machine);
+                    }}
+                  >
+                    Iniciar reparación
+                  </button>
+                )}
               </article>
             ))}
           </div>

@@ -48,6 +48,7 @@ export default function CustomersPage() {
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
 
   async function searchCustomers(
@@ -56,7 +57,6 @@ export default function CustomersPage() {
     const normalized = searchValue.trim();
 
     setError("");
-    setSuccess("");
 
     if (normalized.length < 2) {
       setError(
@@ -102,6 +102,7 @@ export default function CustomersPage() {
   ) {
     event.preventDefault();
 
+    setSuccess("");
     await searchCustomers();
   }
 
@@ -111,7 +112,22 @@ export default function CustomersPage() {
     event.preventDefault();
 
     setError("");
-    setSuccess("");
+    setFormError("");
+
+    const normalizedPhone = form.phone.trim();
+    const phoneDigits = normalizedPhone.replace(/\D/g, "");
+
+    if (
+      !/^[0-9+()\s-]+$/.test(normalizedPhone) ||
+      phoneDigits.length < 7
+    ) {
+      setFormError(
+        "El teléfono debe contener al menos 7 dígitos y sólo números, espacios, +, guiones o paréntesis.",
+      );
+
+      return;
+    }
+
     setCreating(true);
 
     try {
@@ -142,7 +158,7 @@ export default function CustomersPage() {
       const body = await response.json();
 
       if (!response.ok) {
-        setError(
+        setFormError(
           body.error ??
             "No se pudo registrar el cliente.",
         );
@@ -194,6 +210,7 @@ export default function CustomersPage() {
           onClick={() => {
             setError("");
             setSuccess("");
+            setFormError("");
             setShowForm(true);
           }}
         >
@@ -352,6 +369,12 @@ export default function CustomersPage() {
               className={styles.customerForm}
               onSubmit={createCustomer}
             >
+              {formError && (
+                <div className={styles.error}>
+                  {formError}
+                </div>
+              )}
+
               <div className={styles.twoColumns}>
                 <label>
                   Nombre
@@ -401,6 +424,8 @@ export default function CustomersPage() {
                 <label>
                   Teléfono
                   <input
+                    type="tel"
+                    inputMode="tel"
                     value={form.phone}
                     onChange={(event) =>
                       updateField(
@@ -409,6 +434,8 @@ export default function CustomersPage() {
                       )
                     }
                     required
+                    pattern="[0-9+()\s-]+"
+                    title="Usá sólo números, espacios, +, guiones o paréntesis."
                   />
                 </label>
               </div>

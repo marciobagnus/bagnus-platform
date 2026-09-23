@@ -129,13 +129,9 @@ function formatDateTime(value: string) {
 }
 
 function formatCurrency(value: string) {
-  return `ARS ${formatAmount(value)}`;
-}
-
-function formatAmount(value: string) {
   return new Intl.NumberFormat("es-AR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    style: "currency",
+    currency: "ARS",
   }).format(Number(value));
 }
 
@@ -618,7 +614,7 @@ export default function RepairDetailPage({
               <span>Pagado</span>
               <strong>{formatCurrency(repair.billing.totalPaid)}</strong>
             </div>
-            <div className={styles.billingRow}>
+            <div className={`${styles.billingRow} ${styles.outstandingRow}`}>
               <span>Saldo pendiente</span>
               <strong>{formatCurrency(repair.billing.outstandingBalance ?? "0.00")}</strong>
             </div>
@@ -633,16 +629,36 @@ export default function RepairDetailPage({
             <ul className={styles.paymentList}>
               {repair.payments.map((payment) => (
                 <li key={payment.id} className={styles.paymentItem}>
-                  <div className={styles.paymentHeader}>
-                    <strong>{formatCurrency(payment.amount)}</strong>
-                    <span>{getPaymentMethodLabel(payment.method)}</span>
-                  </div>
-                  <p>{formatDateTime(payment.receivedAt)}</p>
-                  {payment.reference && <p>Referencia: {payment.reference}</p>}
-                  {payment.note && <p>Nota: {payment.note}</p>}
-                  <p className={styles.changedBy}>
-                    {payment.recordedBy?.displayName ?? "Sistema / histórico"}
-                  </p>
+                  <dl className={styles.paymentDetails}>
+                    <div>
+                      <dt>Importe</dt>
+                      <dd>{formatCurrency(payment.amount)}</dd>
+                    </div>
+                    <div>
+                      <dt>Medio de pago</dt>
+                      <dd>{getPaymentMethodLabel(payment.method)}</dd>
+                    </div>
+                    <div>
+                      <dt>Fecha</dt>
+                      <dd>{formatDateTime(payment.receivedAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Usuario</dt>
+                      <dd>{payment.recordedBy?.displayName ?? "Sistema / histórico"}</dd>
+                    </div>
+                    {payment.reference && (
+                      <div>
+                        <dt>Referencia</dt>
+                        <dd>{payment.reference}</dd>
+                      </div>
+                    )}
+                    {payment.note && (
+                      <div>
+                        <dt>Nota</dt>
+                        <dd>{payment.note}</dd>
+                      </div>
+                    )}
+                  </dl>
                 </li>
               ))}
             </ul>
@@ -709,21 +725,39 @@ export default function RepairDetailPage({
             </>
           ) : (
             <div className={styles.diagnosisInfo}>
-              <p>
-                <strong>
-                  {repair.diagnosisCharge.decision === "CHARGED"
-                    ? "Diagnóstico cobrado"
-                    : "Diagnóstico bonificado"}
-                </strong>
-              </p>
-              <p>{repair.diagnosisCharge.note ?? "Sin nota."}</p>
-              {repair.diagnosisCharge.decision === "CHARGED" && (
-                <p>Importe: {formatCurrency(repair.diagnosisCharge.amount)}</p>
-              )}
-              <p>Fecha: {formatDateTime(repair.diagnosisCharge.decidedAt)}</p>
-              <p>
-                Usuario: {repair.diagnosisCharge.decidedBy?.displayName ?? "Sistema / histórico"}
-              </p>
+              <span
+                className={
+                  repair.diagnosisCharge.decision === "CHARGED"
+                    ? styles.diagnosisCharged
+                    : styles.diagnosisWaived
+                }
+              >
+                {repair.diagnosisCharge.decision === "CHARGED"
+                  ? "Diagnóstico cobrado"
+                  : "Diagnóstico bonificado"}
+              </span>
+              <dl className={styles.diagnosisDetails}>
+                {repair.diagnosisCharge.decision === "CHARGED" && (
+                  <div>
+                    <dt>Importe</dt>
+                    <dd>{formatCurrency(repair.diagnosisCharge.amount)}</dd>
+                  </div>
+                )}
+                <div>
+                  <dt>Fecha</dt>
+                  <dd>{formatDateTime(repair.diagnosisCharge.decidedAt)}</dd>
+                </div>
+                <div>
+                  <dt>Usuario</dt>
+                  <dd>{repair.diagnosisCharge.decidedBy?.displayName ?? "Sistema / histórico"}</dd>
+                </div>
+                {repair.diagnosisCharge.note && (
+                  <div>
+                    <dt>Nota</dt>
+                    <dd>{repair.diagnosisCharge.note}</dd>
+                  </div>
+                )}
+              </dl>
             </div>
           )}
         </section>
@@ -1048,9 +1082,7 @@ function QuoteSummary({
         </div>
         <div>
           <dt>Importe</dt>
-          <dd>
-            {quote.currency} {formatAmount(quote.totalAmount)}
-          </dd>
+          <dd>{formatCurrency(String(quote.totalAmount))}</dd>
         </div>
         <div>
           <dt>Estado</dt>

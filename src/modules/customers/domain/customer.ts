@@ -63,6 +63,15 @@ export function createCustomer(
   }
 
   if (
+    !/^[0-9+()\s-]+$/.test(phone) ||
+    phone.replace(/\D/g, "").length < 7
+  ) {
+    throw new Error(
+      "El teléfono debe contener al menos 7 dígitos y sólo números, espacios, +, guiones o paréntesis.",
+    );
+  }
+
+  if (
     email !== null &&
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   ) {

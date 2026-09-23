@@ -113,6 +113,31 @@
   cursor: pointer;
 }
 
+.openRepair {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 8px;
+  justify-items: end;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.openRepairStatus {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b54708;
+  font-size: 12px;
+}
+
+.openRepair a {
+  color: #344054;
+}
+
+.openRepair a:hover {
+  text-decoration: underline;
+}
+
 .primaryButton,
 .secondaryButton {
   min-height: 42px;

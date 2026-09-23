@@ -269,6 +269,124 @@
   font-weight: 600;
 }
 
+.financialCard {
+  display: grid;
+  gap: 20px;
+}
+
+.billingRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.billingRow span {
+  color: #667085;
+}
+
+.billingRow strong {
+  color: #101828;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.outstandingRow {
+  margin: -1px -10px 0;
+  padding: 16px 10px;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  background: #fff1f1;
+}
+
+.outstandingRow span,
+.outstandingRow strong {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.paymentsSection {
+  display: grid;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.paymentsSection h3 {
+  font-size: 16px;
+}
+
+.paymentList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paymentItem {
+  padding: 16px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.paymentDetails,
+.diagnosisDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 22px;
+  margin: 0;
+}
+
+.paymentDetails dt,
+.diagnosisDetails dt {
+  margin-bottom: 4px;
+  color: #667085;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.paymentDetails dd,
+.diagnosisDetails dd {
+  color: #344054;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.paymentDetails dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.diagnosisInfo {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.diagnosisCharged,
+.diagnosisWaived {
+  justify-self: start;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.diagnosisCharged {
+  background: #eaf2ff;
+  color: #175cd3;
+}
+
+.diagnosisWaived {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
 .overlay {
   position: fixed;
   z-index: 100;
@@ -359,7 +477,19 @@
 
 @media (max-width: 700px) {
   .grid,
-  .card dl {
+  .card dl,
+  .paymentDetails,
+  .diagnosisDetails {
     grid-template-columns: 1fr;
+  }
+
+  .billingRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .billingRow strong {
+    text-align: left;
   }
 }

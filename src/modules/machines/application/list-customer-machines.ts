@@ -1,12 +1,11 @@
 
-import type { Machine } from "../domain/machine.ts";
-
 import type { MachineListRepository } from "./machine-list-repository.ts";
+import type { CustomerMachine } from "./machine-list-repository.ts";
 
 export async function listCustomerMachines(
   customerId: string,
   repository: MachineListRepository,
-): Promise<Machine[] | null> {
+): Promise<CustomerMachine[] | null> {
   const normalizedId = customerId.trim();
 
   const uuidRegex =

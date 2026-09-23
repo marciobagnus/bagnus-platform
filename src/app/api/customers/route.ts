@@ -99,6 +99,7 @@ if (!user) {
       (
         error.message.includes("obligatorio") ||
         error.message.includes("únicamente números") ||
+        error.message.includes("al menos 7 dígitos") ||
         error.message.includes("no es válido")
       )
     ) {

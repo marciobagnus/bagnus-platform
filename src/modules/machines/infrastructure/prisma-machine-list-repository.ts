@@ -1,7 +1,8 @@
 
-import type { Machine } from "../domain/machine.ts";
-
-import type { MachineListRepository } from "../application/machine-list-repository.ts";
+import type {
+  CustomerMachine,
+  MachineListRepository,
+} from "../application/machine-list-repository.ts";
 
 import { prisma } from "../../../lib/prisma.ts";
 
@@ -10,7 +11,7 @@ export class PrismaMachineListRepository
 
   async findByCustomerId(
     customerId: string,
-  ): Promise<Machine[] | null> {
+  ): Promise<CustomerMachine[] | null> {
 
     const customer = await prisma.customer.findUnique({
       where: {
@@ -23,6 +24,23 @@ export class PrismaMachineListRepository
             { createdAt: "desc" },
             { id: "asc" },
           ],
+          include: {
+            repairOrders: {
+              where: {
+                status: {
+                  notIn: ["DELIVERED", "CANCELLED"],
+                },
+              },
+              orderBy: {
+                receivedAt: "desc",
+              },
+              take: 1,
+              select: {
+                id: true,
+                status: true,
+              },
+            },
+          },
         },
       },
     });
@@ -31,6 +49,16 @@ export class PrismaMachineListRepository
       return null;
     }
 
-    return customer.machines;
+    return customer.machines.map((machine) => ({
+      id: machine.id,
+      customerId: machine.customerId,
+      brand: machine.brand,
+      type: machine.type,
+      model: machine.model,
+      serialNumber: machine.serialNumber,
+      createdAt: machine.createdAt,
+      updatedAt: machine.updatedAt,
+      openRepair: machine.repairOrders[0] ?? null,
+    }));
   }
 }
