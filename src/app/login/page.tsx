@@ -17,6 +17,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
+  const [notice] = useState(() =>
+    typeof window !== "undefined" &&
+    window.location.search.includes("password-reset=success")
+      ? "La contraseña fue actualizada. Iniciá sesión nuevamente con la nueva contraseña."
+      : "",
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(
@@ -88,6 +94,12 @@ export default function LoginPage() {
             Ingresá con tu usuario del taller.
           </p>
         </div>
+
+        {notice && (
+          <div className={styles.notice} role="status">
+            {notice}
+          </div>
+        )}
 
         <form
           className={styles.form}

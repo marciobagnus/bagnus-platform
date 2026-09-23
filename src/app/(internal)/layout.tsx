@@ -65,7 +65,7 @@ export default async function InternalLayout({
           </div>
         </header>
 
-        <SidebarNav />
+        <SidebarNav role={user.role} />
 
         <footer className={styles.account}>
           <div>

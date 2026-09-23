@@ -5,18 +5,24 @@ import { usePathname } from "next/navigation";
 
 import styles from "../app/(internal)/internal-shell.module.css";
 
+import type { InternalUserRole } from "../modules/users/domain/internal-user-role.ts";
+
 const items = [
   { href: "/dashboard", label: "Inicio" },
   { href: "/clientes", label: "Clientes" },
   { href: "/reparaciones", label: "Reparaciones" },
 ];
 
-export function SidebarNav() {
+export function SidebarNav({ role }: { role: InternalUserRole }) {
   const pathname = usePathname();
+
+  const visibleItems = role === "ADMIN"
+    ? [...items, { href: "/usuarios", label: "Usuarios" }]
+    : items;
 
   return (
     <nav className={styles.navigation} aria-label="Navegación principal">
-      {items.map((item) => {
+      {visibleItems.map((item) => {
         const isActive =
           item.href === pathname ||
           (pathname.startsWith(item.href + "/") && item.href !== "/dashboard");

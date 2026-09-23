@@ -230,12 +230,47 @@ model InternalUser {
   updatedAt    DateTime
 
   sessions InternalSession[]
+  loginAttemptBuckets InternalLoginAttemptBucket[]
+
+  passwordResetAuditsPerformed InternalPasswordResetAudit[] @relation("PasswordResetPerformedBy")
+  passwordResetAuditsReceived  InternalPasswordResetAudit[] @relation("PasswordResetTarget")
+  userCreationAuditsPerformed  InternalUserCreationAudit[] @relation("UserCreationPerformedBy")
+  userCreationAuditReceived    InternalUserCreationAudit?  @relation("UserCreationTarget")
 
   recordedPayments   Payment[]             @relation("PaymentRecordedBy")
   diagnosisDecisions DiagnosisCharge[]     @relation("DiagnosisDecidedBy")
   statusChanges      RepairStatusHistory[] @relation("RepairStatusChangedBy")
 
   @@map("internal_users")
+}
+
+model InternalPasswordResetAudit {
+  id                String   @id @db.Uuid
+  performedByUserId String   @db.Uuid
+  targetUserId      String   @db.Uuid
+  targetUsername    String
+  performedAt       DateTime
+
+  performedBy InternalUser @relation("PasswordResetPerformedBy", fields: [performedByUserId], references: [id], onDelete: Restrict)
+  target      InternalUser @relation("PasswordResetTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+
+  @@index([performedByUserId, performedAt])
+  @@index([targetUserId, performedAt])
+  @@map("internal_password_reset_audits")
+}
+
+model InternalUserCreationAudit {
+  id                String   @id @db.Uuid
+  performedByUserId String   @db.Uuid
+  createdUserId     String   @unique @db.Uuid
+  createdUsername   String
+  createdAt         DateTime
+
+  performedBy InternalUser @relation("UserCreationPerformedBy", fields: [performedByUserId], references: [id], onDelete: Restrict)
+  createdUser InternalUser @relation("UserCreationTarget", fields: [createdUserId], references: [id], onDelete: Restrict)
+
+  @@index([performedByUserId, createdAt])
+  @@map("internal_user_creation_audits")
 }
 
 model InternalSession {
@@ -251,4 +286,20 @@ model InternalSession {
   @@index([userId])
   @@index([expiresAt])
   @@map("internal_sessions")
+}
+
+model InternalLoginAttemptBucket {
+  id              String    @id @db.Uuid
+  keyHash         String    @unique @db.VarChar(64)
+  failedAttempts  Int
+  windowStartedAt DateTime
+  blockedUntil    DateTime?
+  updatedAt       DateTime
+
+  user InternalUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @db.Uuid
+
+  @@index([updatedAt])
+  @@index([userId])
+  @@map("internal_login_attempt_buckets")
 }

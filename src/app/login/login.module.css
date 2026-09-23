@@ -113,6 +113,16 @@
   font-size: 0.92rem;
 }
 
+.notice {
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid rgb(4 120 87 / 15%);
+  border-radius: 8px;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 0.92rem;
+}
+
 @media (max-width: 560px) {
   .page {
     padding: 18px;
