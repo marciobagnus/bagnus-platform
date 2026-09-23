@@ -1,10 +1,14 @@
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
 .header {
   margin-bottom: 28px;
 }
 
 .header h1 {
   font-size: 28px;
-  letter-spacing: -0.4px;
 }
 
 .header p {
@@ -38,6 +42,32 @@
   font-size: 28px;
 }
 
+.error,
+.message {
+  margin-top: 16px;
+}
+
+.error {
+  padding: 11px 14px;
+  border-radius: 8px;
+  background: #fff1f1;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.message {
+  color: #667085;
+}
+
+.recentSection {
+  margin-top: 24px;
+}
+
+.recentSection h2 {
+  margin-bottom: 14px;
+  font-size: 18px;
+}
+
 .empty {
   margin-top: 24px;
   padding: 24px;
@@ -53,6 +83,109 @@
 
 .empty p {
   color: #667085;
+}
+
+.tableContainer {
+  overflow: auto;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  background: white;
+}
+
+.table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid #eaecf0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  background: #f9fafb;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.table td {
+  color: #344054;
+  font-size: 14px;
+}
+
+.table td strong,
+.table td span:not(.badge) {
+  display: block;
+}
+
+.table td span:not(.badge) {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusRECEIVED,
+.statusDIAGNOSING {
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.statusWAITING_APPROVAL,
+.statusAWAITING_PICKUP_UNREPAIRED {
+  background: #fff4e5;
+  color: #b54708;
+}
+
+.statusIN_REPAIR {
+  background: #eaf2ff;
+  color: #175cd3;
+}
+
+.statusREADY_FOR_PICKUP {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.statusDELIVERED {
+  background: #e8f5f0;
+  color: #176b4d;
+}
+
+.statusCANCELLED {
+  background: #fff1f1;
+  color: #b42318;
+}
+
+.actions {
+  text-align: right !important;
+}
+
+.actions a {
+  color: #344054;
+  font-weight: 600;
+}
+
+.actions a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 1100px) {

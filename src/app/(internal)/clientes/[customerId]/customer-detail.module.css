@@ -113,6 +113,31 @@
   cursor: pointer;
 }
 
+.openRepair {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 8px;
+  justify-items: end;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.openRepairStatus {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b54708;
+  font-size: 12px;
+}
+
+.openRepair a {
+  color: #344054;
+}
+
+.openRepair a:hover {
+  text-decoration: underline;
+}
+
 .primaryButton,
 .secondaryButton {
   min-height: 42px;
@@ -223,6 +248,50 @@
   font-weight: 600;
 }
 
+.phoneFields {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1fr);
+  gap: 12px;
+}
+
+.phonePart {
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.phoneInputGroup {
+  display: flex;
+  align-items: stretch;
+}
+
+.phonePrefix {
+  display: inline-grid;
+  min-width: 34px;
+  place-items: center;
+  border: 1px solid #d0d5dd;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: #f9fafb;
+  color: #667085;
+  font-weight: 700;
+}
+
+.phoneInputGroup input {
+  border-radius: 0 8px 8px 0;
+}
+
+.phoneModeButton {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #344054;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .form input,
 .form textarea {
   width: 100%;
@@ -259,4 +328,16 @@
     align-items: stretch;
     flex-direction: column;
   }
+
+  .phoneFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.phoneField {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
 }

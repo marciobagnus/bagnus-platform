@@ -56,6 +56,32 @@ test("rechaza teléfonos vacíos o compuestos solo por espacios", () => {
   }
 });
 
+test("acepta teléfonos con formato habitual y una cantidad razonable de dígitos", () => {
+  for (const phone of [
+    "+54 351 0123456",
+    "011-4321-9876",
+    "+1 (212) 555-0123",
+  ]) {
+    assert.equal(
+      createCustomer({ ...validInput, phone }).phone,
+      phone,
+    );
+  }
+});
+
+test("rechaza teléfonos con letras, símbolos inválidos o pocos dígitos", () => {
+  for (const phone of [
+    "351 ABC 1234",
+    "+54/351/0123456",
+    "123456",
+  ]) {
+    assert.throws(
+      () => createCustomer({ ...validInput, phone }),
+      { message: /teléfono.*al menos 7 dígitos/ },
+    );
+  }
+});
+
 test("permite crear clientes diferentes con el mismo teléfono", () => {
   const first = createCustomer(validInput);
 
@@ -67,4 +93,13 @@ test("permite crear clientes diferentes con el mismo teléfono", () => {
 
   assert.notEqual(first.id, second.id);
   assert.equal(first.phone, second.phone);
+});
+
+test("guarda el celular argentino nacional en formato canónico", () => {
+  const customer = createCustomer({
+    ...validInput,
+    phone: "0351 15 1234567",
+  });
+
+  assert.equal(customer.phone, "5493511234567");
 });

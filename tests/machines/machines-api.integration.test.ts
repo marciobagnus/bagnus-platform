@@ -27,6 +27,7 @@ test("la API registra y consulta máquinas de un cliente", async () => {
   let customerId: string | undefined;
   let userId: string | undefined;
   let machineId: string | undefined;
+  let repairId: string | undefined;
   let sessionCookie: string | undefined;
 
   try {
@@ -147,8 +148,53 @@ test("la API registra y consulta máquinas de un cliente", async () => {
     assert.equal(machines[0].id, createdMachine.id);
     assert.equal(machines[0].customerId, customerId);
     assert.equal(machines[0].brand, "Singer");
+    assert.equal(machines[0].openRepair, null);
 
-    // 5. Un cliente inexistente devuelve 404.
+    // 5. Una reparación abierta aparece asociada a la máquina.
+
+    const repairResponse = await fetch(
+      `${BASE_URL}/api/repairs`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authenticatedHeaders,
+        },
+        body: JSON.stringify({
+          machineId,
+          reportedIssue: "No arrastra la tela.",
+        }),
+      },
+    );
+
+    const createdRepair = await repairResponse.json();
+    repairId = createdRepair.id;
+
+    assert.equal(repairResponse.status, 201);
+
+    const openMachinesResponse = await fetch(url, {
+      headers: authenticatedHeaders,
+    });
+
+    const machinesWithOpenRepair = await openMachinesResponse.json();
+
+    assert.equal(machinesWithOpenRepair[0].openRepair.id, repairId);
+    assert.equal(machinesWithOpenRepair[0].openRepair.status, "RECEIVED");
+
+    await prisma.repairOrder.update({
+      where: { id: repairId },
+      data: { status: "DELIVERED" },
+    });
+
+    const closedMachinesResponse = await fetch(url, {
+      headers: authenticatedHeaders,
+    });
+
+    const machinesAfterDelivery = await closedMachinesResponse.json();
+
+    assert.equal(machinesAfterDelivery[0].openRepair, null);
+
+    // 6. Un cliente inexistente devuelve 404.
 
     const notFoundResponse = await fetch(
       `${BASE_URL}/api/customers/${randomUUID()}/machines`,
@@ -159,7 +205,7 @@ test("la API registra y consulta máquinas de un cliente", async () => {
 
     assert.equal(notFoundResponse.status, 404);
 
-    // 6. Un identificador inválido devuelve 400.
+    // 7. Un identificador inválido devuelve 400.
 
     const invalidResponse = await fetch(
       `${BASE_URL}/api/customers/identificador-invalido/machines`,
@@ -173,6 +219,16 @@ test("la API registra y consulta máquinas de un cliente", async () => {
   } finally {
 
     // Eliminar solamente los datos creados por este test.
+
+    if (repairId) {
+      await prisma.repairStatusHistory.deleteMany({
+        where: { repairOrderId: repairId },
+      });
+
+      await prisma.repairOrder.delete({
+        where: { id: repairId },
+      });
+    }
 
     if (machineId) {
       await prisma.machine.deleteMany({

@@ -4,6 +4,7 @@ import type {
 } from "../application/customer-search-repository.ts";
 
 import { prisma } from "../../../lib/prisma.ts";
+import { normalizeCustomerPhone } from "../domain/customer-phone.ts";
 
 export class PrismaCustomerSearchRepository
   implements CustomerSearchRepository {
@@ -15,6 +16,7 @@ export class PrismaCustomerSearchRepository
 
     // Permite buscar un DNI escrito con puntos o espacios.
     const normalizedDni = query.replace(/[\s.]/g, "");
+    const normalizedPhone = normalizeCustomerPhone(query);
 
     const customers = await prisma.customer.findMany({
       where: {
@@ -39,6 +41,11 @@ export class PrismaCustomerSearchRepository
           {
             phone: {
               contains: query,
+            },
+          },
+          {
+            phone: {
+              contains: normalizedPhone,
             },
           },
           {

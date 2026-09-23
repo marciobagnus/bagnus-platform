@@ -9,6 +9,8 @@ import styles from "./clientes.module.css";
 
 import Link from "next/link";
 
+import { buildArgentineMobilePhone } from "../../../modules/customers/domain/customer-phone";
+
 type CustomerResult = {
   id: string;
   name: string;
@@ -20,7 +22,10 @@ type CustomerForm = {
   name: string;
   lastName: string;
   dni: string;
-  phone: string;
+  phoneMode: "argentine" | "manual";
+  areaCode: string;
+  mobileNumber: string;
+  manualPhone: string;
   email: string;
   address: string;
 };
@@ -29,7 +34,10 @@ const EMPTY_FORM: CustomerForm = {
   name: "",
   lastName: "",
   dni: "",
-  phone: "",
+  phoneMode: "argentine",
+  areaCode: "",
+  mobileNumber: "",
+  manualPhone: "",
   email: "",
   address: "",
 };
@@ -48,6 +56,7 @@ export default function CustomersPage() {
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
 
   async function searchCustomers(
@@ -56,7 +65,6 @@ export default function CustomersPage() {
     const normalized = searchValue.trim();
 
     setError("");
-    setSuccess("");
 
     if (normalized.length < 2) {
       setError(
@@ -102,6 +110,7 @@ export default function CustomersPage() {
   ) {
     event.preventDefault();
 
+    setSuccess("");
     await searchCustomers();
   }
 
@@ -111,7 +120,25 @@ export default function CustomersPage() {
     event.preventDefault();
 
     setError("");
-    setSuccess("");
+    setFormError("");
+
+    const phone = form.phoneMode === "argentine"
+      ? buildArgentineMobilePhone(
+          form.areaCode,
+          form.mobileNumber,
+        )
+      : form.manualPhone.trim();
+
+    if (!phone) {
+      setFormError(
+        form.phoneMode === "argentine"
+          ? "Ingresá un código de área de 2 a 4 dígitos y un número de celular válido."
+          : "Ingresá un teléfono válido.",
+      );
+
+      return;
+    }
+
     setCreating(true);
 
     try {
@@ -128,7 +155,7 @@ export default function CustomersPage() {
             name: form.name,
             lastName: form.lastName,
             dni: form.dni,
-            phone: form.phone,
+            phone,
 
             email:
               form.email.trim() || null,
@@ -142,7 +169,7 @@ export default function CustomersPage() {
       const body = await response.json();
 
       if (!response.ok) {
-        setError(
+        setFormError(
           body.error ??
             "No se pudo registrar el cliente.",
         );
@@ -194,6 +221,7 @@ export default function CustomersPage() {
           onClick={() => {
             setError("");
             setSuccess("");
+            setFormError("");
             setShowForm(true);
           }}
         >
@@ -352,6 +380,12 @@ export default function CustomersPage() {
               className={styles.customerForm}
               onSubmit={createCustomer}
             >
+              {formError && (
+                <div className={styles.error}>
+                  {formError}
+                </div>
+              )}
+
               <div className={styles.twoColumns}>
                 <label>
                   Nombre
@@ -394,23 +428,72 @@ export default function CustomersPage() {
                         event.target.value,
                       )
                     }
-                    required
                   />
                 </label>
 
-                <label>
-                  Teléfono
-                  <input
-                    value={form.phone}
-                    onChange={(event) =>
+                <div className={styles.phoneField}>
+                  Teléfono celular argentino
+                  {form.phoneMode === "argentine" ? (
+                    <div className={styles.phoneFields}>
+                      <label className={styles.phonePart}>
+                        <span>Código de área</span>
+                        <span className={styles.phoneInputGroup}>
+                          <span className={styles.phonePrefix}>0</span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            value={form.areaCode}
+                            onChange={(event) =>
+                              updateField("areaCode", event.target.value.replace(/\D/g, ""))
+                            }
+                            required
+                            aria-label="Código de área sin cero"
+                          />
+                        </span>
+                      </label>
+                      <label className={styles.phonePart}>
+                        <span>Número de celular</span>
+                        <span className={styles.phoneInputGroup}>
+                          <span className={styles.phonePrefix}>15</span>
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            value={form.mobileNumber}
+                            onChange={(event) =>
+                              updateField("mobileNumber", event.target.value.replace(/\D/g, ""))
+                            }
+                            required
+                            aria-label="Número de celular sin 15"
+                          />
+                        </span>
+                      </label>
+                    </div>
+                  ) : (
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      value={form.manualPhone}
+                      onChange={(event) =>
+                        updateField("manualPhone", event.target.value)
+                      }
+                      required
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className={styles.phoneModeButton}
+                    onClick={() =>
                       updateField(
-                        "phone",
-                        event.target.value,
+                        "phoneMode",
+                        form.phoneMode === "argentine" ? "manual" : "argentine",
                       )
                     }
-                    required
-                  />
-                </label>
+                  >
+                    {form.phoneMode === "argentine"
+                      ? "Ingresar otro formato"
+                      : "Usar celular argentino"}
+                  </button>
+                </div>
               </div>
 
               <label>

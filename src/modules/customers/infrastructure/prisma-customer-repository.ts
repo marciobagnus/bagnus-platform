@@ -28,4 +28,21 @@ export class PrismaCustomerRepository
     });
 
   }
+
+  async update(customer: Customer): Promise<void> {
+    await prisma.customer.update({
+      where: {
+        id: customer.id,
+      },
+      data: {
+        name: customer.name,
+        lastName: customer.lastName,
+        dni: customer.dni,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
+        updatedAt: customer.updatedAt,
+      },
+    });
+  }
 }
