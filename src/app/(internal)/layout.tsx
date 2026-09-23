@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -19,6 +18,8 @@ import {
 import {
   LogoutButton,
 } from "../../components/logout-button.tsx";
+import { BagnusBrand } from "../../components/bagnus-brand";
+import { SidebarNav } from "../../components/sidebar-nav";
 
 import styles from "./internal-shell.module.css";
 
@@ -50,8 +51,12 @@ export default async function InternalLayout({
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <header className={styles.brand}>
-          <div className={styles.logo}>
-            B
+          <div className={styles.logoWrap}>
+            <BagnusBrand
+              variant="symbol-primary"
+              width={34}
+              height={34}
+            />
           </div>
 
           <div>
@@ -60,19 +65,7 @@ export default async function InternalLayout({
           </div>
         </header>
 
-        <nav className={styles.navigation}>
-          <Link href="/dashboard">
-            Inicio
-          </Link>
-
-          <Link href="/clientes">
-            Clientes
-          </Link>
-
-          <Link href="/reparaciones">
-            Reparaciones
-          </Link>
-        </nav>
+        <SidebarNav />
 
         <footer className={styles.account}>
           <div>

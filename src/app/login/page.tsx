@@ -7,6 +7,7 @@ import {
 
 import { useRouter } from "next/navigation";
 
+import { BagnusBrand } from "../../components/bagnus-brand";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -71,12 +72,12 @@ export default function LoginPage() {
       <section className={styles.card}>
         <header className={styles.brand}>
           <div className={styles.logo}>
-            B
-          </div>
-
-          <div>
-            <h1>Bagnus</h1>
-            <p>Gestión del taller</p>
+            <BagnusBrand
+              variant="dark"
+              width={190}
+              height={52}
+              priority
+            />
           </div>
         </header>
 

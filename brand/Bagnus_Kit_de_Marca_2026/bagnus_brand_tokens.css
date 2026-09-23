@@ -1,0 +1,11 @@
+:root {
+  --bagnus-red: #E30613;
+  --bagnus-red-dark: #A9000B;
+  --bagnus-black: #151515;
+  --bagnus-carbon: #24272B;
+  --bagnus-steel: #6B7280;
+  --bagnus-warm-white: #F7F7F5;
+  --bagnus-white: #FFFFFF;
+  --bagnus-font-display: 'Manrope', Arial, sans-serif;
+  --bagnus-font-body: 'Inter', Arial, sans-serif;
+}
