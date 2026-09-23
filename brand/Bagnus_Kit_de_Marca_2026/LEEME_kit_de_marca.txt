@@ -1,0 +1,19 @@
+BAGNUS - KIT DE IDENTIDAD VISUAL v1.0 (2026)
+
+CONTENIDO
+- manual/Manual_de_Marca_Bagnus.pdf: normas completas.
+- logos_png/: versiones para fondos claros, oscuros, transparencia y favicons.
+- aplicaciones/: portada de redes, post, tarjetas, membrete y paleta.
+- bagnus_brand_tokens.css / .json: colores y tipografias para producto digital.
+
+REGLAS RAPIDAS
+1. Usar el logo principal sobre blanco o Warm White.
+2. Sobre rojo, usar la version invertida. Sobre fotografia, usar blanco o negro segun contraste.
+3. No deformar, rotar, recolorear, agregar sombras ni modificar la relacion entre simbolo y palabra.
+4. Ancho minimo: 160 px en digital y 35 mm en impresion.
+5. Para imprenta, solicitar prueba fisica: los valores CMYK son aproximados y dependen del soporte/perfil.
+
+TIPOGRAFIAS RECOMENDADAS
+- Titulos: Manrope ExtraBold / ExtraBold Italic.
+- Texto e interfaz: Inter Regular / Medium / SemiBold.
+Ambas familias son gratuitas y estan disponibles en Google Fonts.
