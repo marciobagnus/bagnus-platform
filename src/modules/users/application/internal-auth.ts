@@ -10,6 +10,14 @@ import {
 } from "../domain/password.ts";
 
 import {
+  isPasswordLengthValid,
+} from "../domain/password-policy.ts";
+
+import {
+  LOGIN_RATE_LIMIT_MESSAGE,
+} from "../domain/login-rate-limit.ts";
+
+import {
   generateSessionToken,
   hashSessionToken,
 } from "../domain/session-token.ts";
@@ -62,6 +70,49 @@ export interface InternalAuthRepository {
   ): Promise<void>;
 }
 
+export type LoginAttemptState = {
+  failedAttempts: number;
+  blockedUntil: Date | null;
+};
+
+export interface InternalLoginAttemptRepository {
+  getLoginAttemptState(
+    keyHash: string,
+    now: Date,
+  ): Promise<LoginAttemptState | null>;
+
+  registerLoginFailure(
+    keyHash: string,
+    now: Date,
+  ): Promise<LoginAttemptState>;
+
+  resetLoginFailures(keyHash: string): Promise<void>;
+}
+
+export interface InternalUserAdministrationRepository {
+  findUsers(): Promise<PublicInternalUser[]>;
+
+  findUserByUsername(
+    username: string,
+  ): Promise<PublicInternalUser | null>;
+
+  createStaffUser(
+    input: {
+      user: NewInternalUser;
+      performedByUserId: string;
+    },
+  ): Promise<void>;
+
+  resetUserPassword(
+    input: {
+      targetUserId: string;
+      targetUsername: string;
+      passwordHash: string;
+      performedByUserId: string;
+    },
+  ): Promise<void>;
+}
+
 export class InvalidCredentialsError extends Error {
   constructor() {
     super("Usuario o contraseña incorrectos.");
@@ -79,6 +130,21 @@ export async function createInternalUser(
   },
   repository: InternalAuthRepository,
 ): Promise<PublicInternalUser> {
+  const user = await buildInternalUser(input);
+
+  await repository.createUser(user);
+
+  return user;
+}
+
+async function buildInternalUser(
+  input: {
+    username: string;
+    displayName: string;
+    password: string;
+    role: InternalUserRole;
+  },
+): Promise<NewInternalUser> {
   const username = input.username
     .trim()
     .toLowerCase();
@@ -124,15 +190,13 @@ export async function createInternalUser(
 
   const now = new Date();
 
-  await repository.createUser({
+  return {
     ...user,
     passwordHash,
     active: true,
     createdAt: now,
     updatedAt: now,
-  });
-
-  return user;
+  };
 }
 
 export async function loginInternalUser(
@@ -141,6 +205,7 @@ export async function loginInternalUser(
     password: string;
   },
   repository: InternalAuthRepository,
+  beforeCreateSession?: () => Promise<void>,
 ) {
   const username = input.username
     .trim()
@@ -149,8 +214,7 @@ export async function loginInternalUser(
   if (
     username.length === 0 ||
     username.length > 50 ||
-    input.password.length === 0 ||
-    input.password.length > 128
+    !isPasswordLengthValid(input.password)
   ) {
     throw new InvalidCredentialsError();
   }
@@ -172,6 +236,8 @@ export async function loginInternalUser(
   if (!validPassword) {
     throw new InvalidCredentialsError();
   }
+
+  await beforeCreateSession?.();
 
   const token = generateSessionToken();
 
@@ -201,6 +267,80 @@ export async function loginInternalUser(
   };
 }
 
+export async function loginInternalUserWithRateLimit(
+  input: {
+    username: string;
+    password: string;
+  },
+  repository: InternalAuthRepository,
+  attemptRepository: InternalLoginAttemptRepository,
+  keyHash: string,
+  clock: () => Date = () => new Date(),
+) {
+  const now = clock();
+
+  const currentState =
+    await attemptRepository.getLoginAttemptState(
+      keyHash,
+      now,
+    );
+
+  if (
+    currentState?.blockedUntil &&
+    currentState.blockedUntil > now
+  ) {
+    throw new LoginRateLimitExceededError(
+      currentState.blockedUntil,
+    );
+  }
+
+  try {
+    const result = await loginInternalUser(
+      input,
+      repository,
+      async () => {
+        const state =
+          await attemptRepository.getLoginAttemptState(
+            keyHash,
+            clock(),
+          );
+        const currentTime = clock();
+
+        if (
+          state?.blockedUntil &&
+          state.blockedUntil > currentTime
+        ) {
+          throw new LoginRateLimitExceededError(
+            state.blockedUntil,
+          );
+        }
+      },
+    );
+
+    await attemptRepository.resetLoginFailures(keyHash);
+
+    return result;
+  } catch (error) {
+    if (!(error instanceof InvalidCredentialsError)) {
+      throw error;
+    }
+
+    const state =
+      await attemptRepository.registerLoginFailure(
+        keyHash,
+        clock(),
+      );
+
+    if (state.blockedUntil) {
+      throw new LoginRateLimitExceededError(
+        state.blockedUntil,
+      );
+    }
+
+    throw error;
+  }
+}
+
 export async function getCurrentInternalUser(
   token: string | null | undefined,
   repository: InternalAuthRepository,
@@ -226,4 +366,128 @@ export async function logoutInternalUser(
   await repository.deleteSessionByTokenHash(
     hashSessionToken(token),
   );
+}
+
+export class UnauthorizedPasswordResetError extends Error {
+  constructor() {
+    super("Solo un administrador puede restablecer contraseñas.");
+
+    this.name = "UnauthorizedPasswordResetError";
+  }
+}
+
+export class InternalUserNotFoundError extends Error {
+  constructor() {
+    super("No existe un usuario interno con ese nombre de usuario.");
+
+    this.name = "InternalUserNotFoundError";
+  }
+}
+
+export class PasswordConfirmationMismatchError extends Error {
+  constructor() {
+    super("La confirmación de contraseña no coincide.");
+
+    this.name = "PasswordConfirmationMismatchError";
+  }
+}
+
+export async function resetInternalUserPassword(
+  input: {
+    actor: PublicInternalUser;
+    username: string;
+    password: string;
+    passwordConfirmation: string;
+  },
+  repository: InternalUserAdministrationRepository,
+): Promise<void> {
+  if (input.actor.role !== "ADMIN") {
+    throw new UnauthorizedPasswordResetError();
+  }
+
+  const username = input.username.trim().toLowerCase();
+
+  if (
+    username.length < 3 ||
+    username.length > 50 ||
+    !/^[a-z0-9._-]+$/.test(username)
+  ) {
+    throw new InternalUserNotFoundError();
+  }
+
+  if (input.password !== input.passwordConfirmation) {
+    throw new PasswordConfirmationMismatchError();
+  }
+
+  const user = await repository.findUserByUsername(username);
+
+  if (!user) {
+    throw new InternalUserNotFoundError();
+  }
+
+  const passwordHash = await hashPassword(input.password);
+
+  await repository.resetUserPassword({
+    targetUserId: user.id,
+    targetUsername: user.username,
+    passwordHash,
+    performedByUserId: input.actor.id,
+  });
+}
+
+export async function createStaffInternalUser(
+  input: {
+    actor: PublicInternalUser;
+    username: string;
+    displayName: string;
+    password: string;
+    passwordConfirmation: string;
+  },
+  repository: InternalUserAdministrationRepository,
+): Promise<PublicInternalUser> {
+  if (input.actor.role !== "ADMIN") {
+    throw new UnauthorizedUserAdministrationError();
+  }
+
+  if (input.password !== input.passwordConfirmation) {
+    throw new PasswordConfirmationMismatchError();
+  }
+
+  const user = await buildInternalUser({
+    username: input.username,
+    displayName: input.displayName,
+    password: input.password,
+    role: "STAFF",
+  });
+
+  await repository.createStaffUser({
+    user,
+    performedByUserId: input.actor.id,
+  });
+
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role,
+  };
+}
+
+export class UnauthorizedUserAdministrationError extends Error {
+  constructor() {
+    super("Solo un administrador puede administrar usuarios.");
+
+    this.name = "UnauthorizedUserAdministrationError";
+  }
+}
+
+export class LoginRateLimitExceededError extends Error {
+  readonly blockedUntil: Date;
+
+  constructor(blockedUntil: Date) {
+    super(LOGIN_RATE_LIMIT_MESSAGE);
+
+    this.name = "LoginRateLimitExceededError";
+    this.blockedUntil = blockedUntil;
+  }
 }

@@ -4,6 +4,11 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
+import {
+  isPasswordLengthValid,
+  PASSWORD_LENGTH_ERROR,
+} from "./password-policy.ts";
+
 const KEY_LENGTH = 64;
 
 const SCRYPT_OPTIONS = {
@@ -38,10 +43,8 @@ function deriveKey(
 export async function hashPassword(
   password: string,
 ): Promise<string> {
-  if (password.length < 12 || password.length > 128) {
-    throw new Error(
-      "La contraseña debe tener entre 12 y 128 caracteres.",
-    );
+  if (!isPasswordLengthValid(password)) {
+    throw new Error(PASSWORD_LENGTH_ERROR);
   }
 
   const salt = randomBytes(16).toString("hex");
@@ -54,7 +57,7 @@ export async function verifyPassword(
   password: string,
   storedHash: string,
 ): Promise<boolean> {
-  if (password.length === 0 || password.length > 128) {
+  if (!isPasswordLengthValid(password)) {
     return false;
   }
 

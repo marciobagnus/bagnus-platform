@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 
+import { isIP } from "node:net";
+
 import {
   InvalidCredentialsError,
-  loginInternalUser,
+  LoginRateLimitExceededError,
+  loginInternalUserWithRateLimit,
 } from "../../../../modules/users/application/internal-auth.ts";
+
+import {
+  createLoginAttemptKeyHash,
+  LOGIN_RATE_LIMIT_MESSAGE,
+} from "../../../../modules/users/domain/login-rate-limit.ts";
 
 import {
   PrismaInternalAuthRepository,
@@ -13,6 +21,24 @@ import {
   INTERNAL_SESSION_COOKIE,
   sessionCookieOptions,
 } from "../../../../modules/users/infrastructure/session-cookie.ts";
+
+function getLoginOrigin(request: Request): string {
+  const headerName = process.env.VERCEL === "1"
+    ? "x-vercel-forwarded-for"
+    : "x-forwarded-for";
+  const forwardedFor = request.headers.get(headerName);
+  const origin = forwardedFor
+    ?.split(",", 1)[0]
+    .trim();
+
+  if (origin && isIP(origin)) {
+    return origin;
+  }
+
+  return process.env.VERCEL === "1"
+    ? "vercel-unknown-origin"
+    : "local-origin";
+}
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -54,11 +80,20 @@ export async function POST(request: Request) {
 
   const repository =
     new PrismaInternalAuthRepository();
+  const normalizedUsername = username
+    .trim()
+    .toLowerCase();
+  const keyHash = createLoginAttemptKeyHash(
+    normalizedUsername,
+    getLoginOrigin(request),
+  );
 
   try {
-    const result = await loginInternalUser(
+    const result = await loginInternalUserWithRateLimit(
       { username, password },
       repository,
+      repository,
+      keyHash,
     );
 
     const response = NextResponse.json(
@@ -74,6 +109,27 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    if (error instanceof LoginRateLimitExceededError) {
+      const response = NextResponse.json(
+        { error: LOGIN_RATE_LIMIT_MESSAGE },
+        { status: 429 },
+      );
+
+      response.headers.set(
+        "Retry-After",
+        String(
+          Math.max(
+            1,
+            Math.ceil(
+              (error.blockedUntil.getTime() - Date.now()) / 1000,
+            ),
+          ),
+        ),
+      );
+
+      return response;
+    }
+
     if (error instanceof InvalidCredentialsError) {
       return NextResponse.json(
         { error: error.message },

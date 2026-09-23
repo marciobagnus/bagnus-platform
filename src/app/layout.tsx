@@ -24,10 +24,6 @@ export const metadata: Metadata = {
     ],
     shortcut: "/brand/bagnus_favicon_32px.png",
     apple: "/brand/bagnus_favicon_192px.png",
-    other: {
-      rel: "mask-icon",
-      url: "/brand/bagnus_favicon_64px.png",
-    },
   },
 };
 
