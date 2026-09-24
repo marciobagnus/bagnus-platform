@@ -18,11 +18,11 @@ type Props = {
 const variants: Record<BrandVariant, { src: string; alt: string }> = {
   dark: {
     src: "/brand/bagnus_logo_principal_fondo_blanco_3000px.png",
-    alt: "Bagnus Smart Tech",
+    alt: "Bagnus Platform",
   },
   light: {
     src: "/brand/bagnus_logo_blanco_transparente_3000px.png",
-    alt: "Bagnus Smart Tech",
+    alt: "Bagnus Platform",
   },
   "symbol-dark": {
     src: "/brand/bagnus_simbolo_negro_transparente_1024px.png",
