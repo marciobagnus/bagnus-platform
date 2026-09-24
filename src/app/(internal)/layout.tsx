@@ -61,7 +61,7 @@ export default async function InternalLayout({
 
           <div>
             <strong>Bagnus</strong>
-            <span>Smart Tech</span>
+            <span>Platform</span>
           </div>
         </header>
 

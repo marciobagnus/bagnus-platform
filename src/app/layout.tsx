@@ -13,7 +13,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Bagnus Smart Tech",
+  title: "Bagnus Platform",
   description: "Sistema de gestión del taller Bagnus",
   icons: {
     icon: [
