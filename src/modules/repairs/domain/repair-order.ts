@@ -1,13 +1,13 @@
 
 export type RepairStatus =
   | "RECEIVED"
-  | "DIAGNOSING"
   | "WAITING_APPROVAL"
   | "IN_REPAIR"
   | "READY_FOR_PICKUP"
-  | "DELIVERED"
-  | "CANCELLED"
-  | "AWAITING_PICKUP_UNREPAIRED";
+  | "DELIVERED";
+
+export type RepairResolution = "REPAIRED" | "QUOTE_REJECTED";
+export type RepairHistoryStatus = RepairStatus | "DIAGNOSING" | "CANCELLED" | "AWAITING_PICKUP_UNREPAIRED";
 
 export type RepairOrder = {
   id: string;
@@ -17,6 +17,8 @@ export type RepairOrder = {
   receivedAccessories: string | null;
 
   status: RepairStatus;
+  resolution: RepairResolution | null;
+  deliveredAt: Date | null;
 
   receivedAt: Date;
   createdAt: Date;
@@ -66,6 +68,8 @@ export function createRepairOrder(
     receivedAccessories,
 
     status: "RECEIVED",
+    resolution: null,
+    deliveredAt: null,
 
     receivedAt: input.now,
     createdAt: input.now,

@@ -10,13 +10,11 @@ export async function getRepairDashboard(
     activeRepairs,
     waitingApproval,
     readyForPickup,
-    awaitingPickupUnrepaired,
     recentRepairs,
   ] = await Promise.all([
     repository.countActiveRepairs(),
     repository.countByStatus("WAITING_APPROVAL"),
     repository.countByStatus("READY_FOR_PICKUP"),
-    repository.countByStatus("AWAITING_PICKUP_UNREPAIRED"),
     repository.findRecentActive(10),
   ]);
 
@@ -24,7 +22,6 @@ export async function getRepairDashboard(
     activeRepairs,
     waitingApproval,
     readyForPickup,
-    awaitingPickupUnrepaired,
     recentRepairs,
   };
 }

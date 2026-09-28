@@ -36,7 +36,6 @@ type DashboardData = {
   activeRepairs: number;
   waitingApproval: number;
   readyForPickup: number;
-  awaitingPickupUnrepaired: number;
   recentRepairs: DashboardRepair[];
 };
 
@@ -122,13 +121,6 @@ export default function DashboardPage() {
         <article>
           <span>Listas para entregar</span>
           <strong>{dashboard?.readyForPickup ?? "-"}</strong>
-        </article>
-
-        <article>
-          <span>Retiro sin reparar</span>
-          <strong>
-            {dashboard?.awaitingPickupUnrepaired ?? "-"}
-          </strong>
         </article>
       </div>
 

@@ -2,7 +2,6 @@ import type { RepairStatus } from "../domain/repair-order.ts";
 
 export const FINAL_REPAIR_STATUSES: RepairStatus[] = [
   "DELIVERED",
-  "CANCELLED",
 ];
 
 export type RepairDashboardItem = {
@@ -27,7 +26,6 @@ export type RepairDashboard = {
   activeRepairs: number;
   waitingApproval: number;
   readyForPickup: number;
-  awaitingPickupUnrepaired: number;
   recentRepairs: RepairDashboardItem[];
 };
 

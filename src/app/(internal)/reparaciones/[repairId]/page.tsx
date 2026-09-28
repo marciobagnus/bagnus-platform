@@ -16,16 +16,20 @@ import {
 } from "../repair-status";
 import {
   buildFinishedRepairWhatsAppMessage,
+  buildRejectedQuoteWhatsAppMessage,
+  buildDebtReminderWhatsAppMessage,
   buildQuoteWhatsAppMessage,
   buildWhatsAppLink,
 } from "../../../../lib/whatsapp";
 
 type PaymentMethod = "CASH" | "TRANSFER" | "CARD" | "OTHER";
-type DiagnosisDecision = "CHARGED" | "WAIVED";
+
 
 type Repair = {
   id: string;
   status: RepairStatus;
+  resolution: "REPAIRED" | "QUOTE_REJECTED" | null;
+  deliveredAt: string | null;
   reportedIssue: string;
   receivedAccessories: string | null;
   receivedAt: string;
@@ -42,6 +46,7 @@ type Repair = {
       channel: string;
       note: string | null;
       decidedAt: string;
+      recordedBy: { displayName: string } | null;
     }[];
   }[];
   machine: {
@@ -78,18 +83,6 @@ type Repair = {
       displayName: string;
     } | null;
   }[];
-  diagnosisCharge: {
-    id: string;
-    decision: DiagnosisDecision;
-    amount: string;
-    currency: string;
-    note: string | null;
-    decidedAt: string;
-    decidedBy: {
-      id: string;
-      displayName: string;
-    } | null;
-  } | null;
   statusHistory: {
     id: string;
     fromStatus: RepairStatus | null;
@@ -156,13 +149,7 @@ function getPaymentMethodLabel(method: string) {
 }
 
 function canRegisterPayment(repair: Repair) {
-  return (
-    repair.billing.billingResolved &&
-    repair.billing.hasOutstandingBalance &&
-    (repair.status === "READY_FOR_PICKUP" ||
-      (repair.status === "AWAITING_PICKUP_UNREPAIRED" &&
-        repair.diagnosisCharge?.decision === "CHARGED"))
-  );
+  return repair.billing.billingResolved && repair.billing.hasOutstandingBalance;
 }
 
 export default function RepairDetailPage({
@@ -188,10 +175,7 @@ export default function RepairDetailPage({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
-  const [showDiagnosisForm, setShowDiagnosisForm] = useState(false);
-  const [diagnosisDecision, setDiagnosisDecision] = useState<DiagnosisDecision>("CHARGED");
-  const [diagnosisAmount, setDiagnosisAmount] = useState("");
-  const [diagnosisNote, setDiagnosisNote] = useState("");
+  const [showHandoverForm, setShowHandoverForm] = useState(false);
 
   const loadRepair = useCallback(async () => {
     const result = await fetchRepair(repairId);
@@ -230,16 +214,6 @@ export default function RepairDetailPage({
     } finally {
       setActionLoading("");
     }
-  }
-
-  async function startDiagnosis() {
-    await executeAction("diagnosis", () =>
-      fetch(`/api/repairs/${repairId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "DIAGNOSING" }),
-      }),
-    );
   }
 
   async function createQuote(event: React.FormEvent<HTMLFormElement>) {
@@ -332,36 +306,19 @@ export default function RepairDetailPage({
     }
   }
 
-  async function submitDiagnosisDecision(event: React.FormEvent<HTMLFormElement>) {
+  async function handOverMachine(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    const completed = await executeAction("diagnosis", () =>
-      fetch(`/api/repairs/${repairId}/diagnosis`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          decision: diagnosisDecision,
-          amount: diagnosisDecision === "CHARGED" ? diagnosisAmount : null,
-          note: diagnosisNote.trim() || null,
-        }),
-      }),
-    );
-
-    if (completed) {
-      setShowDiagnosisForm(false);
-      setDiagnosisAmount("");
-      setDiagnosisNote("");
-    }
-  }
-
-  async function handOverMachine() {
-    await executeAction("handover", () =>
+    const completed = await executeAction("handover", () =>
       fetch(`/api/repairs/${repairId}/actions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "HAND_OVER_MACHINE" }),
+        body: JSON.stringify({ action: "HAND_OVER_MACHINE", payment: {
+          amount: paymentAmount, method: paymentMethod,
+          reference: paymentReference.trim() || null, note: paymentNote.trim() || null,
+        }}),
       }),
     );
+    if (completed) setShowHandoverForm(false);
   }
 
   useEffect(() => {
@@ -426,8 +383,11 @@ export default function RepairDetailPage({
   );
   const finishedWhatsAppLink = buildWhatsAppLink(
     customer.phone,
-    buildFinishedRepairWhatsAppMessage(whatsappData),
+    repair.resolution === "QUOTE_REJECTED" ? buildRejectedQuoteWhatsAppMessage(whatsappData) : buildFinishedRepairWhatsAppMessage(whatsappData),
   );
+
+  const debtWhatsAppLink = buildWhatsAppLink(customer.phone,
+    buildDebtReminderWhatsAppMessage({...whatsappData, balance: repair.billing.outstandingBalance ?? "0.00"}));
 
   return (
     <section className={styles.page}>
@@ -438,10 +398,11 @@ export default function RepairDetailPage({
       <header className={styles.header}>
         <div>
           <span className={`${styles.badge} ${styles[`status${repair.status}`]}`}>
-            {getRepairStatusLabel(repair.status)}
+            {getRepairStatusLabel(repair.status)}{repair.resolution ? ` — ${repair.resolution === "REPAIRED" ? "Reparada" : "Sin reparar"}` : ""}
           </span>
           <h1>Reparación</h1>
           <p>Ingreso del {formatDate(repair.receivedAt)}</p>
+          {repair.deliveredAt && <p>Entregada el {formatDateTime(repair.deliveredAt)}</p>}
         </div>
       </header>
 
@@ -511,17 +472,6 @@ export default function RepairDetailPage({
         {actionError && <div className={styles.formError}>{actionError}</div>}
 
         {repair.status === "RECEIVED" && (
-          <button
-            className={styles.primaryButton}
-            type="button"
-            onClick={startDiagnosis}
-            disabled={actionLoading !== ""}
-          >
-            {actionLoading === "diagnosis" ? "Comenzando..." : "Comenzar diagnóstico"}
-          </button>
-        )}
-
-        {repair.status === "DIAGNOSING" && (
           <div className={styles.actionStack}>
             {currentQuote ? (
               <>
@@ -575,11 +525,16 @@ export default function RepairDetailPage({
               type="button"
               onClick={() => {
                 setActionError("");
+                setDecision("APPROVED");
                 setShowDecisionForm(true);
               }}
               disabled={actionLoading !== ""}
             >
-              Registrar decisión del cliente
+              Aceptar presupuesto
+            </button>
+            <button className={styles.secondaryButton} type="button" disabled={actionLoading !== ""}
+              onClick={() => {setActionError("");setDecision("REJECTED");setShowDecisionForm(true);}}>
+              Rechazar presupuesto
             </button>
           </div>
         )}
@@ -598,7 +553,7 @@ export default function RepairDetailPage({
         {repair.status === "READY_FOR_PICKUP" && (
           <div className={styles.actionStack}>
             <p className={styles.actionMessage}>
-              Reparación finalizada. Pendiente de cobro y entrega.
+              {repair.resolution === "REPAIRED" ? "Lista para retirar — Reparada" : "Lista para retirar — Sin reparar. El diagnóstico no tiene costo."}
             </p>
             {finishedWhatsAppLink ? (
               <a
@@ -617,25 +572,13 @@ export default function RepairDetailPage({
           </div>
         )}
 
-        {repair.status === "AWAITING_PICKUP_UNREPAIRED" && (
-          <p className={styles.actionMessage}>
-            El cliente rechazó el presupuesto. Pendiente de resolver diagnóstico y entrega.
-          </p>
+        {repair.status === "DELIVERED" && repair.billing.hasOutstandingBalance && debtWhatsAppLink && (
+          <a className={styles.whatsappButton} href={debtWhatsAppLink} target="_blank" rel="noreferrer">Recordar saldo por WhatsApp</a>
         )}
-
-        {![
-          "RECEIVED",
-          "DIAGNOSING",
-          "WAITING_APPROVAL",
-          "IN_REPAIR",
-          "READY_FOR_PICKUP",
-          "AWAITING_PICKUP_UNREPAIRED",
-        ].includes(repair.status) && (
-          <p className={styles.actionMessage}>No hay acciones disponibles.</p>
-        )}
+        <p className={styles.whatsappHint}>Los avisos por WhatsApp se envían manualmente desde la aplicación.</p>
       </section>
 
-      {currentQuote && repair.status !== "DIAGNOSING" && (
+      {currentQuote && repair.status !== "RECEIVED" && (
         <section className={styles.card}>
           <h2>Presupuesto vigente</h2>
           <QuoteSummary quote={currentQuote} />
@@ -646,7 +589,7 @@ export default function RepairDetailPage({
         <div className={styles.sectionHeader}>
           <div>
             <h2>Cuenta de la reparación</h2>
-            <p>Resumen financiero calculado por el backend.</p>
+            <p>Importe del trabajo y pagos registrados.</p>
           </div>
         </div>
 
@@ -720,145 +663,25 @@ export default function RepairDetailPage({
               type="button"
               onClick={() => {
                 setActionError("");
+                setPaymentAmount("");setPaymentReference("");setPaymentNote("");setPaymentMethod("CASH");
                 setShowPaymentForm(true);
               }}
               disabled={actionLoading !== ""}
             >
-              {actionLoading === "payment" ? "Registrando..." : "Registrar pago"}
+              {actionLoading === "payment" || actionLoading === "handover" ? "Registrando..." : showHandoverForm ? "Confirmar entrega" : "Registrar pago"}
             </button>
           </div>
         )}
       </section>
 
-      {repair.status === "AWAITING_PICKUP_UNREPAIRED" && (
-        <section className={`${styles.card} ${styles.financialCard}`}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h2>Diagnóstico</h2>
-              <p>Decisión del cargo por diagnóstico.</p>
-            </div>
-          </div>
-
-          {!repair.diagnosisCharge ? (
-            <>
-              <p className={styles.actionMessage}>
-                El cliente rechazó el presupuesto. Definí si corresponde cobrar el diagnóstico.
-              </p>
-              <div className={styles.sectionActions}>
-                <button
-                  className={styles.primaryButton}
-                  type="button"
-                  onClick={() => {
-                    setActionError("");
-                    setDiagnosisDecision("CHARGED");
-                    setShowDiagnosisForm(true);
-                  }}
-                  disabled={actionLoading !== ""}
-                >
-                  Cobrar diagnóstico
-                </button>
-                <button
-                  className={styles.secondaryButton}
-                  type="button"
-                  onClick={() => {
-                    setActionError("");
-                    setDiagnosisDecision("WAIVED");
-                    setShowDiagnosisForm(true);
-                  }}
-                  disabled={actionLoading !== ""}
-                >
-                  Bonificar diagnóstico
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className={styles.diagnosisInfo}>
-              <span
-                className={
-                  repair.diagnosisCharge.decision === "CHARGED"
-                    ? styles.diagnosisCharged
-                    : styles.diagnosisWaived
-                }
-              >
-                {repair.diagnosisCharge.decision === "CHARGED"
-                  ? "Diagnóstico cobrado"
-                  : "Diagnóstico bonificado"}
-              </span>
-              <dl className={styles.diagnosisDetails}>
-                {repair.diagnosisCharge.decision === "CHARGED" && (
-                  <div>
-                    <dt>Importe</dt>
-                    <dd>{formatCurrency(repair.diagnosisCharge.amount)}</dd>
-                  </div>
-                )}
-                <div>
-                  <dt>Fecha</dt>
-                  <dd>{formatDateTime(repair.diagnosisCharge.decidedAt)}</dd>
-                </div>
-                <div>
-                  <dt>Usuario</dt>
-                  <dd>{repair.diagnosisCharge.decidedBy?.displayName ?? "Sistema / histórico"}</dd>
-                </div>
-                {repair.diagnosisCharge.note && (
-                  <div>
-                    <dt>Nota</dt>
-                    <dd>{repair.diagnosisCharge.note}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          )}
-        </section>
-      )}
-
-      {(repair.status === "READY_FOR_PICKUP" || repair.status === "AWAITING_PICKUP_UNREPAIRED") && (
-        <section className={`${styles.card} ${styles.financialCard}`}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h2>Entrega</h2>
-              <p>Entrega de la máquina según la regla del backend.</p>
-            </div>
-          </div>
-
-          {repair.status === "READY_FOR_PICKUP" && (
-            <>
-              {repair.billing.outstandingBalance !== "0.00" ? (
-                <p className={styles.actionMessage}>
-                  Hay saldo pendiente. La máquina no puede entregarse.
-                </p>
-              ) : (
-                <button
-                  className={styles.primaryButton}
-                  type="button"
-                  onClick={() => handOverMachine()}
-                  disabled={actionLoading !== ""}
-                >
-                  {actionLoading === "handover" ? "Entregando..." : "Entregar máquina"}
-                </button>
-              )}
-            </>
-          )}
-
-          {repair.status === "AWAITING_PICKUP_UNREPAIRED" && (
-            <>
-              {!repair.diagnosisCharge ? (
-                <p className={styles.actionMessage}>Primero debe resolverse el diagnóstico.</p>
-              ) : repair.diagnosisCharge.decision === "CHARGED" && repair.billing.hasOutstandingBalance ? (
-                <p className={styles.actionMessage}>
-                  Debe cancelarse el saldo del diagnóstico antes de entregar.
-                </p>
-              ) : (
-                <button
-                  className={styles.primaryButton}
-                  type="button"
-                  onClick={() => handOverMachine()}
-                  disabled={actionLoading !== ""}
-                >
-                  {actionLoading === "handover" ? "Entregando..." : "Entregar máquina sin reparar"}
-                </button>
-              )}
-            </>
-          )}
+      {repair.status === "READY_FOR_PICKUP" && (
+        <section className={styles.card}>
+          <h2>Entrega</h2>
+          <p>Podés entregar la máquina y registrar un pago ahora, o cobrar el saldo más adelante.</p>
+          <button className={styles.primaryButton} disabled={actionLoading !== ""} type="button"
+            onClick={() => {setActionError("");setPaymentAmount("0");setPaymentMethod("CASH");setPaymentReference("");setPaymentNote("");setShowHandoverForm(true);}}>
+            Entregar máquina
+          </button>
         </section>
       )}
 
@@ -937,7 +760,7 @@ export default function RepairDetailPage({
                   Cancelar
                 </button>
                 <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
-                  {actionLoading === "quote" ? "Guardando..." : "Crear presupuesto"}
+                  {actionLoading === "quote" ? "Guardando..." : "Guardar y enviar presupuesto"}
                 </button>
               </div>
             </form>
@@ -950,7 +773,7 @@ export default function RepairDetailPage({
           <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="decision-title">
             <div className={styles.modalHeader}>
               <div>
-                <h2 id="decision-title">Registrar decisión</h2>
+                <h2 id="decision-title">{decision === "APPROVED" ? "Aceptar presupuesto" : "Rechazar presupuesto"}</h2>
                 <p>Guardá la respuesta del cliente sobre el presupuesto.</p>
               </div>
               <button
@@ -964,16 +787,6 @@ export default function RepairDetailPage({
             </div>
             {actionError && <div className={styles.formError}>{actionError}</div>}
             <form className={styles.form} onSubmit={(event) => saveDecision(event, currentQuote.id)}>
-              <label>
-                Decisión
-                <select
-                  value={decision}
-                  onChange={(event) => setDecision(event.target.value as "APPROVED" | "REJECTED")}
-                >
-                  <option value="APPROVED">Aprobar</option>
-                  <option value="REJECTED">Rechazar</option>
-                </select>
-              </label>
               <label>
                 Canal
                 <select
@@ -994,7 +807,7 @@ export default function RepairDetailPage({
                   Cancelar
                 </button>
                 <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
-                  {actionLoading === "decision" ? "Guardando..." : "Registrar decisión"}
+                  {actionLoading === "decision" ? "Guardando..." : decision === "APPROVED" ? "Aceptar presupuesto" : "Rechazar presupuesto"}
                 </button>
               </div>
             </form>
@@ -1002,25 +815,25 @@ export default function RepairDetailPage({
         </div>
       )}
 
-      {showPaymentForm && (
+      {(showPaymentForm || showHandoverForm) && (
         <div className={styles.overlay}>
           <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="payment-title">
             <div className={styles.modalHeader}>
               <div>
-                <h2 id="payment-title">Registrar pago</h2>
-                <p>Ingresá el importe y el medio de pago.</p>
+                <h2 id="payment-title">{showHandoverForm ? "Entregar máquina" : "Registrar pago"}</h2>
+                <p>Saldo actual: {formatCurrency(repair.billing.outstandingBalance ?? "0.00")}. {showHandoverForm ? "Ingresá 0 para entregar sin pago." : "Ingresá el importe y el medio de pago."}</p>
               </div>
               <button
                 className={styles.close}
                 type="button"
-                onClick={() => setShowPaymentForm(false)}
+                onClick={() => {setShowPaymentForm(false);setShowHandoverForm(false);}}
                 aria-label="Cerrar"
               >
                 ×
               </button>
             </div>
             {actionError && <div className={styles.formError}>{actionError}</div>}
-            <form className={styles.form} onSubmit={submitPayment}>
+            <form className={styles.form} onSubmit={showHandoverForm ? handOverMachine : submitPayment}>
               <label>
                 Importe
                 <input
@@ -1051,11 +864,11 @@ export default function RepairDetailPage({
                 <textarea value={paymentNote} onChange={(event) => setPaymentNote(event.target.value)} rows={3} />
               </label>
               <div className={styles.modalActions}>
-                <button className={styles.secondaryButton} type="button" onClick={() => setShowPaymentForm(false)}>
+                <button className={styles.secondaryButton} type="button" onClick={() => {setShowPaymentForm(false);setShowHandoverForm(false);}}>
                   Cancelar
                 </button>
                 <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
-                  {actionLoading === "payment" ? "Registrando..." : "Registrar pago"}
+                  {actionLoading === "payment" || actionLoading === "handover" ? "Registrando..." : showHandoverForm ? "Confirmar entrega" : "Registrar pago"}
                 </button>
               </div>
             </form>
@@ -1063,55 +876,6 @@ export default function RepairDetailPage({
         </div>
       )}
 
-      {showDiagnosisForm && (
-        <div className={styles.overlay}>
-          <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="diagnosis-title">
-            <div className={styles.modalHeader}>
-              <div>
-                <h2 id="diagnosis-title">
-                  {diagnosisDecision === "CHARGED" ? "Cobrar diagnóstico" : "Bonificar diagnóstico"}
-                </h2>
-                <p>La decisión se registra con auditoría del usuario activo.</p>
-              </div>
-              <button
-                className={styles.close}
-                type="button"
-                onClick={() => setShowDiagnosisForm(false)}
-                aria-label="Cerrar"
-              >
-                ×
-              </button>
-            </div>
-            {actionError && <div className={styles.formError}>{actionError}</div>}
-            <form className={styles.form} onSubmit={submitDiagnosisDecision}>
-              {diagnosisDecision === "CHARGED" && (
-                <label>
-                  Importe
-                  <input
-                    value={diagnosisAmount}
-                    onChange={(event) => setDiagnosisAmount(event.target.value)}
-                    inputMode="decimal"
-                    placeholder="0.00"
-                    required
-                  />
-                </label>
-              )}
-              <label>
-                Nota (opcional)
-                <textarea value={diagnosisNote} onChange={(event) => setDiagnosisNote(event.target.value)} rows={3} />
-              </label>
-              <div className={styles.modalActions}>
-                <button className={styles.secondaryButton} type="button" onClick={() => setShowDiagnosisForm(false)}>
-                  Cancelar
-                </button>
-                <button className={styles.primaryButton} type="submit" disabled={actionLoading !== ""}>
-                  {actionLoading === "diagnosis" ? "Registrando..." : diagnosisDecision === "CHARGED" ? "Cobrar diagnóstico" : "Bonificar diagnóstico"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
@@ -1147,6 +911,7 @@ function QuoteSummary({
           Decisión: {quote.decisions[0].approved ? "Aprobado" : "Rechazado"}
           {` - ${DECISION_CHANNELS[quote.decisions[0].channel as keyof typeof DECISION_CHANNELS] ?? quote.decisions[0].channel}`}
           {` - ${formatDateTime(quote.decisions[0].decidedAt)}`}
+          {` - ${quote.decisions[0].recordedBy?.displayName ?? "Sistema / histórico"}`}
           {quote.decisions[0].note ? ` - ${quote.decisions[0].note}` : ""}
         </p>
       )}

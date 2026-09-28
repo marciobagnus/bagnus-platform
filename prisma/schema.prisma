@@ -47,6 +47,15 @@ model Machine {
 
 enum RepairStatus {
   RECEIVED
+  WAITING_APPROVAL
+  IN_REPAIR
+  READY_FOR_PICKUP
+  DELIVERED
+}
+
+// Legacy values are read-only history; never operational states.
+enum RepairHistoryStatus {
+  RECEIVED
   DIAGNOSING
   WAITING_APPROVAL
   IN_REPAIR
@@ -96,8 +105,8 @@ model RepairStatusHistory {
   repairOrderId   String  @db.Uuid
   changedByUserId String? @db.Uuid
 
-  fromStatus RepairStatus?
-  toStatus   RepairStatus
+  fromStatus RepairHistoryStatus?
+  toStatus   RepairHistoryStatus
 
   note      String?
   changedAt DateTime

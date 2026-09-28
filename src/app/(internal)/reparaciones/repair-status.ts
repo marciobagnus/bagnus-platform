@@ -1,12 +1,9 @@
 export const REPAIR_STATUS_LABELS = {
   RECEIVED: "Recibida",
-  DIAGNOSING: "En diagnóstico",
   WAITING_APPROVAL: "Esperando aprobación",
   IN_REPAIR: "En reparación",
-  READY_FOR_PICKUP: "Lista para entregar",
-  AWAITING_PICKUP_UNREPAIRED: "Retiro sin reparar",
+  READY_FOR_PICKUP: "Lista para retirar",
   DELIVERED: "Entregada",
-  CANCELLED: "Cancelada",
 } as const;
 
 export type RepairStatus = keyof typeof REPAIR_STATUS_LABELS;
@@ -17,6 +14,6 @@ export function getRepairStatusLabel(
   return (
     REPAIR_STATUS_LABELS[
       status as RepairStatus
-    ] ?? status
+    ] ?? ({ DIAGNOSING: "En diagnóstico (histórico)", CANCELLED: "Cancelada (histórico)", AWAITING_PICKUP_UNREPAIRED: "Retiro sin reparar (histórico)" } as Record<string,string>)[status] ?? status
   );
 }

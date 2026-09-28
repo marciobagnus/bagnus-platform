@@ -72,3 +72,10 @@ test("mantiene mensajes separados para presupuesto y reparación finalizada", ()
   assert.match(finishedMessage, /lista para retirar/);
   assert.doesNotMatch(finishedMessage, /entregada/);
 });
+test("rejection is free and delivered debt reminder is separate from pickup", async () => {
+  const { buildRejectedQuoteWhatsAppMessage, buildDebtReminderWhatsAppMessage } = await import("../../src/lib/whatsapp.ts");
+  const data = {customerName:"Ana",brand:"Singer",model:"123"};
+  assert.match(buildRejectedQuoteWhatsAppMessage(data), /diagnóstico realizado no tiene costo/);
+  assert.match(buildDebtReminderWhatsAppMessage({...data,balance:"70000.00"}), /70[.]000/);
+  assert.match(buildDebtReminderWhatsAppMessage({...data,balance:"70000.00"}), /ya fue entregada/);
+});

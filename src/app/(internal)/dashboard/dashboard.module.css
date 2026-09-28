@@ -143,14 +143,12 @@
   white-space: nowrap;
 }
 
-.statusRECEIVED,
-.statusDIAGNOSING {
+.statusRECEIVED {
   background: #f2f4f7;
   color: #344054;
 }
 
-.statusWAITING_APPROVAL,
-.statusAWAITING_PICKUP_UNREPAIRED {
+.statusWAITING_APPROVAL {
   background: #fff4e5;
   color: #b54708;
 }
@@ -170,10 +168,6 @@
   color: #176b4d;
 }
 
-.statusCANCELLED {
-  background: #fff1f1;
-  color: #b42318;
-}
 
 .actions {
   text-align: right !important;

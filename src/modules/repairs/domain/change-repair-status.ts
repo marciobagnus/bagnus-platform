@@ -19,7 +19,6 @@ const allowedTransitions: Record<
   readonly RepairStatus[]
 > = {
   RECEIVED: ["WAITING_APPROVAL"],
-  DIAGNOSING: [],
   WAITING_APPROVAL: [
     "IN_REPAIR",
     "READY_FOR_PICKUP",
@@ -28,9 +27,7 @@ const allowedTransitions: Record<
 
   READY_FOR_PICKUP: ["DELIVERED"],
 
-  AWAITING_PICKUP_UNREPAIRED: [],
   DELIVERED: [],
-  CANCELLED: [],
 };
 
 type ChangeRepairStatusInput = {

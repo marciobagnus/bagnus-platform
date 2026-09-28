@@ -1,7 +1,7 @@
 
 import type {
   RepairOrder,
-  RepairStatus,
+  RepairHistoryStatus,
 } from "../domain/repair-order.ts";
 
 export type RepairOrderPaymentSummary = {
@@ -80,8 +80,8 @@ export type RepairOrderDetails = RepairOrder & {
 
   statusHistory: {
     id: string;
-    fromStatus: RepairStatus | null;
-    toStatus: RepairStatus;
+    fromStatus: RepairHistoryStatus | null;
+    toStatus: RepairHistoryStatus;
     note: string | null;
     changedAt: Date;
     changedBy: {

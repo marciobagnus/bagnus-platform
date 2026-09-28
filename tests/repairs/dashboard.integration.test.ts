@@ -17,15 +17,15 @@ const BASE_URL =
 
 const ACTIVE_STATUSES = [
   "RECEIVED",
-  "DIAGNOSING",
+  "RECEIVED",
   "WAITING_APPROVAL",
   "IN_REPAIR",
   "READY_FOR_PICKUP",
-  "AWAITING_PICKUP_UNREPAIRED",
+  "READY_FOR_PICKUP",
   "RECEIVED",
   "IN_REPAIR",
   "RECEIVED",
-  "DIAGNOSING",
+  "RECEIVED",
   "IN_REPAIR",
   "RECEIVED",
 ] as const;
@@ -122,7 +122,7 @@ test("protege y calcula correctamente el dashboard", async () => {
       });
     }
 
-    for (const status of ["DELIVERED", "CANCELLED"] as const) {
+    for (const status of ["DELIVERED", "DELIVERED"] as const) {
       const repairId = randomUUID();
       const machineId = randomUUID();
       machineIds.push(machineId);
@@ -175,7 +175,6 @@ test("protege y calcula correctamente el dashboard", async () => {
     );
     assert.ok(dashboard.waitingApproval >= 1);
     assert.ok(dashboard.readyForPickup >= 1);
-    assert.ok(dashboard.awaitingPickupUnrepaired >= 1);
     assert.equal(dashboard.recentRepairs.length, 10);
     assert.equal(
       dashboard.recentRepairs[0].id,
@@ -188,8 +187,7 @@ test("protege y calcula correctamente el dashboard", async () => {
     assert.equal(
       dashboard.recentRepairs.some(
         (repair: { status: string }) =>
-          repair.status === "DELIVERED" ||
-          repair.status === "CANCELLED",
+          repair.status === "DELIVERED",
       ),
       false,
     );
