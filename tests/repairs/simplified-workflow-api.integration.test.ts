@@ -61,8 +61,13 @@ for (const role of ["ADMIN","STAFF"] as const) for (const decision of ["APPROVED
       assert.equal(order.payments.length,decision === "APPROVED" ? 2 : 0);
       assert.equal((await request(`${root}/actions`,"POST",{action:"HAND_OVER_MACHINE"})).status,409);
       // A previous debt never prevents a new order; a second simultaneous open order does.
-      const newOrder = {machineId:f.machineId,reportedIssue:"Nuevo ingreso con cuenta anterior"};
-      assert.equal((await request("/api/repairs","POST",newOrder)).status,201);
+      const newOrder = {machineId:f.machineId,reportedIssue:"Nuevo ingreso con cuenta anterior",changedByUserId:randomUUID()};
+      const intakeResponse = await request("/api/repairs","POST",newOrder);
+      assert.equal(intakeResponse.status,201);
+      const intake = await intakeResponse.json();
+      const intakeDetail = await (await request(`/api/repairs/${intake.id}`)).json();
+      assert.equal(intakeDetail.statusHistory[0].changedBy.id,user.id);
+      assert.equal(intakeDetail.statusHistory[0].changedBy.displayName,user.displayName);
       assert.equal((await request("/api/repairs","POST",newOrder)).status,409);
       if (decision === "APPROVED") {
         assert.equal(order.billing.outstandingBalance,"70000.00");

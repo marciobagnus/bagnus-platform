@@ -15,6 +15,7 @@ import type {
 
 export type RegisterRepairOrderInput = {
   machineId: string;
+  changedByUserId?: string | null;
 
   reportedIssue: string;
   receivedAccessories?: string | null;
@@ -37,7 +38,7 @@ export async function registerRepairOrder(
     now: new Date(),
   });
 
-  await repository.add(repairOrder);
+  await repository.add(repairOrder, input.changedByUserId ?? null);
 
   return repairOrder;
 }

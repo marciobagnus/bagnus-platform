@@ -8,20 +8,22 @@ test("crea una máquina y su reparación inicial con IDs relacionados", async ()
   const result = await registerMachineIntake(
     {
       customerId: "550e8400-e29b-41d4-a716-446655440000",
+      changedByUserId: "550e8400-e29b-41d4-a716-446655440001",
       brand: "Singer",
       type: "Recta",
       model: "4423",
       reportedIssue: "No arrastra la tela.",
     },
     {
-      async add(machine, repair) {
-        saved.push({ machine, repair });
+      async add(machine, repair, changedByUserId) {
+        saved.push({ machine, repair, changedByUserId });
       },
     },
   );
 
   assert.equal(result.repair.machineId, result.machine.id);
   assert.equal(saved.length, 1);
+  assert.equal(saved[0].changedByUserId, "550e8400-e29b-41d4-a716-446655440001");
   assert.equal(saved[0].repair.reportedIssue, "No arrastra la tela.");
 });
 

@@ -7,7 +7,7 @@ import type { MachineIntakeRepository } from "../application/register-machine-in
 
 export class PrismaMachineIntakeRepository
   implements MachineIntakeRepository {
-  async add(machine: Machine, repair: RepairOrder): Promise<void> {
+  async add(machine: Machine, repair: RepairOrder, changedByUserId?: string | null): Promise<void> {
     await prisma.$transaction(async (tx) => {
       await tx.machine.create({
         data: {
@@ -40,6 +40,7 @@ export class PrismaMachineIntakeRepository
           id: randomUUID(),
           repairOrderId: repair.id,
           fromStatus: null,
+          changedByUserId: changedByUserId ?? null,
           toStatus: repair.status,
           note: "Ingreso de la máquina al taller.",
           changedAt: repair.receivedAt,

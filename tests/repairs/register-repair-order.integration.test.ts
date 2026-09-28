@@ -133,6 +133,7 @@ test("registra una reparación y su historial en PostgreSQL", async () => {
 
     const initialHistory =
       savedRepair.statusHistory[0];
+    assert.equal(initialHistory.changedByUserId, null);
 
     assert.equal(
       initialHistory.fromStatus,

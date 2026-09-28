@@ -141,3 +141,11 @@ test("propaga los errores del repositorio", async () => {
     /Error de persistencia/,
   );
 });
+test("propaga el actor del ingreso sin incorporarlo a la entidad", async () => {
+  const actor = randomUUID();
+  let savedActor;
+  await registerRepairOrder({...validRepairInput(),changedByUserId:actor},{async add(_order,changedByUserId){savedActor=changedByUserId;}});
+  assert.equal(savedActor,actor);
+  await registerRepairOrder(validRepairInput(),{async add(_order,changedByUserId){savedActor=changedByUserId;}});
+  assert.equal(savedActor,null);
+});
