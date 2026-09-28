@@ -64,6 +64,8 @@ model RepairOrder {
   receivedAccessories String?
 
   status RepairStatus @default(RECEIVED)
+  resolution RepairResolution?
+  deliveredAt DateTime?
 
   receivedAt DateTime
   createdAt  DateTime
@@ -82,6 +84,11 @@ model RepairOrder {
   @@index([machineId])
   @@index([status])
   @@map("repair_orders")
+}
+
+enum RepairResolution {
+  REPAIRED
+  QUOTE_REJECTED
 }
 
 model RepairStatusHistory {
@@ -146,6 +153,7 @@ model RepairQuote {
 model QuoteDecision {
   id      String @id @db.Uuid
   quoteId String @db.Uuid
+  recordedByUserId String? @db.Uuid
 
   approved Boolean
   channel  QuoteDecisionChannel
@@ -154,9 +162,11 @@ model QuoteDecision {
   decidedAt DateTime
 
   quote RepairQuote @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  recordedBy InternalUser? @relation("QuoteDecisionRecordedBy", fields: [recordedByUserId], references: [id], onDelete: Restrict)
 
   @@unique([quoteId])
   @@index([quoteId])
+  @@index([recordedByUserId])
   @@map("quote_decisions")
 }
 
@@ -240,6 +250,7 @@ model InternalUser {
   recordedPayments   Payment[]             @relation("PaymentRecordedBy")
   diagnosisDecisions DiagnosisCharge[]     @relation("DiagnosisDecidedBy")
   statusChanges      RepairStatusHistory[] @relation("RepairStatusChangedBy")
+  quoteDecisions QuoteDecision[] @relation("QuoteDecisionRecordedBy")
 
   @@map("internal_users")
 }
