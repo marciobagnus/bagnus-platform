@@ -139,6 +139,7 @@ export default function RepairsPage() {
       <header className={styles.header}>
         <div>
           <h1>Reparaciones</h1>
+          <Link href="/reparaciones/saldos">Ver saldos pendientes</Link>
           <p>
             Seguimiento de los trabajos ingresados al taller.
           </p>
