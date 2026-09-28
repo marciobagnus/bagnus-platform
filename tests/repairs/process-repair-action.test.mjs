@@ -89,7 +89,7 @@ test("entrega una máquina reparada", async () => {
 
 test("entrega una máquina sin reparar tras el rechazo", async () => {
   const repository =
-    createFakeRepository("AWAITING_PICKUP_UNREPAIRED");
+    createFakeRepository("READY_FOR_PICKUP");
 
   const result = await processRepairAction(
     {
@@ -101,12 +101,12 @@ test("entrega una máquina sin reparar tras el rechazo", async () => {
 
   assert.equal(
     result.status,
-    "CANCELLED",
+    "DELIVERED",
   );
 
   assert.equal(
     repository.getStatus(),
-    "CANCELLED",
+    "DELIVERED",
   );
 
   assert.equal(repository.history.length, 1);

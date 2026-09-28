@@ -27,7 +27,7 @@ function validInput() {
   };
 }
 
-test("crea un presupuesto inicial en borrador", async () => {
+test("crea y envia un presupuesto inicial", async () => {
   const repository = createFakeRepository();
 
   const quote = await createInitialRepairQuote(
@@ -36,7 +36,7 @@ test("crea un presupuesto inicial en borrador", async () => {
   );
 
   assert.equal(quote.version, 1);
-  assert.equal(quote.status, "DRAFT");
+  assert.equal(quote.status, "WAITING_APPROVAL");
 
   assert.equal(
     quote.description,

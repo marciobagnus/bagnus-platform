@@ -83,14 +83,7 @@ export async function processRepairAction(
     if (currentStatus === "READY_FOR_PICKUP") {
       nextStatus = "DELIVERED";
       defaultNote =
-        "Máquina reparada y entregada al cliente.";
-
-    } else if (
-      currentStatus === "AWAITING_PICKUP_UNREPAIRED"
-    ) {
-      nextStatus = "CANCELLED";
-      defaultNote =
-        "Máquina entregada sin reparar. Orden cerrada.";
+        "Máquina entregada al cliente.";
 
     } else {
       throw new RepairActionConflictError(

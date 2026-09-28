@@ -59,7 +59,7 @@ export async function submitRepairQuote(
 
   // 3. La reparación debe continuar en diagnóstico.
 
-  if (context.repairStatus !== "DIAGNOSING") {
+  if (context.repairStatus !== "RECEIVED") {
     throw new QuoteSubmissionConflictError(
       "La reparación debe estar en diagnóstico para informar el presupuesto.",
     );

@@ -17,6 +17,8 @@ export type CreateInitialRepairQuoteInput = {
   repairOrderId: string;
   description: string;
   totalAmount: string;
+  draft?: boolean;
+  changedByUserId?: string | null;
 };
 
 export async function createInitialRepairQuote(
@@ -37,7 +39,8 @@ export async function createInitialRepairQuote(
     now: new Date(),
   });
 
-  await repository.addInitialDraft(quote);
+  if (!input.draft) quote.status = "WAITING_APPROVAL";
+  await repository.addInitialDraft(quote, input.changedByUserId ?? null);
 
   return quote;
 }

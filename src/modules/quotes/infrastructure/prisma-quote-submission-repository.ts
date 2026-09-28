@@ -60,6 +60,8 @@ export class PrismaQuoteSubmissionRepository
     } = input;
 
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM repair_orders WHERE id = ${repairOrderId}::uuid FOR UPDATE`;
+
 
       // 1. Actualizar el presupuesto solamente
       // si todavía está en DRAFT.
@@ -85,13 +87,13 @@ export class PrismaQuoteSubmissionRepository
       }
 
       // 2. Actualizar la reparación solamente
-      // si todavía está en DIAGNOSING.
+      // si todavía está en RECEIVED.
 
       const repairUpdate =
         await tx.repairOrder.updateMany({
           where: {
             id: repairOrderId,
-            status: "DIAGNOSING",
+            status: "RECEIVED",
           },
 
           data: {
