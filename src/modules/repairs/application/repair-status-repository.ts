@@ -1,3 +1,4 @@
+import type { Payment } from "../../payments/domain/payment.ts";
 
 import type {
   RepairStatus,
@@ -18,6 +19,7 @@ export interface RepairStatusRepository {
     expectedStatus: RepairStatus,
     change: RepairStatusChange,
     changedByUserId?: string | null,
+    payment?: Payment | null,
   ): Promise<void>;
 
 }

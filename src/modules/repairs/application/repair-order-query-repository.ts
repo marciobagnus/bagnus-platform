@@ -36,6 +36,8 @@ export type RepairOrderBillingSummary = {
   totalPaid: string;
   outstandingBalance: string | null;
   currency: string;
+  creditAmount: string | null;
+  financialStatus: string;
   billingResolved: boolean;
   hasOutstandingBalance: boolean;
 };
@@ -54,6 +56,7 @@ export type RepairOrderDetails = RepairOrder & {
       channel: string;
       note: string | null;
       decidedAt: Date;
+      recordedBy: { id: string; displayName: string } | null;
     }[];
   }[];
 

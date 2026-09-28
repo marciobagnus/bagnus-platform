@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import { createPayment, type PaymentMethod } from "../../payments/domain/payment.ts";
+
+export class RepairActionInputError extends Error {}
+
 
 import {
   changeRepairStatus,
@@ -33,6 +38,7 @@ export type ProcessRepairActionInput = {
   repairId: string;
   action: RepairAction;
   note?: string | null;
+  payment?: { amount: string; method: PaymentMethod; reference?: string | null; note?: string | null };
   changedByUserId?: string | null;
 };
 
@@ -49,6 +55,21 @@ export async function processRepairAction(
     throw new Error(
       "El identificador de la reparación no es válido.",
     );
+  }
+
+  let payment = null;
+  if (input.payment) {
+    if (input.action !== "HAND_OVER_MACHINE") throw new RepairActionInputError("El pago simultáneo solo corresponde a la entrega.");
+    if (!/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/.test(input.payment.amount)) {
+      throw new RepairActionInputError("El importe debe ser cero o positivo, con hasta dos decimales.");
+    }
+    if (/[1-9]/.test(input.payment.amount)) {
+      try {
+        payment = createPayment({ ...input.payment, id: randomUUID(), repairOrderId: repairId, now: new Date() });
+      } catch (error) {
+        throw new RepairActionInputError(error instanceof Error ? error.message : "Pago inválido.");
+      }
+    }
   }
 
   const currentStatus =
@@ -116,6 +137,7 @@ export async function processRepairAction(
     currentStatus,
     statusChange,
     input.changedByUserId ?? null,
+    payment,
   );
 
   return {
