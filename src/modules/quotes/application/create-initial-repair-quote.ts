@@ -40,7 +40,7 @@ export async function createInitialRepairQuote(
   });
 
   if (!input.draft) quote.status = "WAITING_APPROVAL";
-  await repository.addInitialDraft(quote, input.changedByUserId ?? null);
+  await repository.addInitialQuote(quote, input.changedByUserId ?? null);
 
   return quote;
 }

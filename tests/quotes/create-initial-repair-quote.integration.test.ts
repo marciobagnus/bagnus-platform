@@ -130,8 +130,7 @@ test("crea un presupuesto inicial en PostgreSQL y evita duplicados", async () =>
 
     assert.equal(quotes.length, 1);
 
-    // 6. Comprobar que crear el borrador
-    // no modificó el estado de la reparación.
+    // 6. Crear y enviar cambia la reparación y registra una transición.
 
     const repair = await prisma.repairOrder.findUnique({
       where: {

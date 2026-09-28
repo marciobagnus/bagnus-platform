@@ -19,6 +19,7 @@ import {
 type Repair = {
   id: string;
   status: RepairStatus;
+  resolution: "REPAIRED" | "QUOTE_REJECTED" | null;
   reportedIssue: string;
   receivedAt: string;
   machine: {
@@ -231,7 +232,7 @@ export default function RepairsPage() {
                       <span
                         className={`${styles.badge} ${styles[`status${repair.status}`]}`}
                       >
-                        {getRepairStatusLabel(repair.status)}
+                        {getRepairStatusLabel(repair.status, repair.resolution)}
                       </span>
                     </td>
                     <td>{formatDate(repair.receivedAt)}</td>

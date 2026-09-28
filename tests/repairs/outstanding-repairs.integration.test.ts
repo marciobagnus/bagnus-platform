@@ -13,7 +13,7 @@ test("finds old delivered debt beyond 100 recent repairs, paginates and agrees w
     await prisma.repairOrder.update({where:{id:f.repairId},data:{receivedAt:new Date("2000-01-01"),deliveredAt:now}});
     await prisma.payment.create({data:{id:randomUUID(),repairOrderId:f.repairId,amount:"30000",method:"CASH",receivedAt:now,createdAt:now}});
     const ids = Array.from({length:105},()=>randomUUID());
-    await prisma.repairOrder.createMany({data:ids.map(id=>({id,machineId:f.machineId,reportedIssue:"Prueba paginación",status:"DELIVERED",resolution:"REPAIRED",deliveredAt:now,receivedAt:now,createdAt:now,updatedAt:now}))});
+    await prisma.repairOrder.createMany({data:ids.map(id=>({id,machineId:f.machineId,reportedIssue:"Prueba paginación",status:"DELIVERED",resolution:"REPAIRED",deliveredAt:now,receivedAt:new Date("2000-01-02"),createdAt:now,updatedAt:now}))});
     await prisma.repairQuote.createMany({data:ids.map(repairOrderId=>({id:randomUUID(),repairOrderId,version:1,description:"Prueba",totalAmount:"10",status:"APPROVED",createdAt:now,updatedAt:now}))});
     const repository = new PrismaOutstandingRepairsRepository();
     let page = 1, hasMore = true;

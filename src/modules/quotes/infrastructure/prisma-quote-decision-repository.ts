@@ -98,6 +98,7 @@ export class PrismaQuoteDecisionRepository
           where: {
             id: repairOrderId,
             status: "WAITING_APPROVAL",
+            resolution: null,
           },
 
           data: {

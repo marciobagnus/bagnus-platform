@@ -94,6 +94,7 @@ export class PrismaQuoteSubmissionRepository
           where: {
             id: repairOrderId,
             status: "RECEIVED",
+            resolution: null,
           },
 
           data: {

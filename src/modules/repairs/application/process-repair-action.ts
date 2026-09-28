@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createPayment, type PaymentMethod } from "../../payments/domain/payment.ts";
 
-export class RepairActionInputError extends Error {}
-
-
 import {
   changeRepairStatus,
 } from "../domain/change-repair-status.ts";
@@ -15,6 +12,8 @@ import type {
 import type {
   RepairStatusRepository,
 } from "./repair-status-repository";
+
+export class RepairActionInputError extends Error {}
 
 export type RepairAction =
   | "FINISH_REPAIR"
@@ -97,9 +96,7 @@ export async function processRepairAction(
       "Reparación finalizada. Máquina pendiente de retiro.";
 
   } else if (input.action === "HAND_OVER_MACHINE") {
-    // La entrega depende de si la máquina
-    // fue reparada o si el cliente rechazó
-    // el presupuesto.
+    // Ambos resultados se entregan desde READY_FOR_PICKUP.
 
     if (currentStatus === "READY_FOR_PICKUP") {
       nextStatus = "DELIVERED";

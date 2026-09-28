@@ -10,9 +10,7 @@ export type RepairStatusChange = {
   changedAt: Date;
 };
 
-// Primera transición permitida.
-// Ampliaremos este mapa al implementar
-// el diagnóstico, los presupuestos y las entregas.
+// Cada transición corresponde a una operación del taller. Pagos y borradores no cambian el estado.
 
 const allowedTransitions: Record<
   RepairStatus,

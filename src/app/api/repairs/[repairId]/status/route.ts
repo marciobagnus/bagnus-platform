@@ -2,5 +2,5 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedInternalUser } from "../../../../../lib/current-internal-user";
 export async function PATCH() {
   if (!await getAuthenticatedInternalUser()) return NextResponse.json({error:"No autenticado."},{status:401});
-  return NextResponse.json({error:"Us· la operaciÛn correspondiente del taller. El diagnÛstico no requiere un cambio de estado."},{status:409});
+  return NextResponse.json({error:"Us√° la operaci√≥n correspondiente del taller. El diagn√≥stico no requiere un cambio de estado."},{status:409});
 }

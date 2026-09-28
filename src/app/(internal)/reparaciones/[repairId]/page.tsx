@@ -398,7 +398,7 @@ export default function RepairDetailPage({
       <header className={styles.header}>
         <div>
           <span className={`${styles.badge} ${styles[`status${repair.status}`]}`}>
-            {getRepairStatusLabel(repair.status)}{repair.resolution ? ` — ${repair.resolution === "REPAIRED" ? "Reparada" : "Sin reparar"}` : ""}
+            {getRepairStatusLabel(repair.status, repair.resolution)}
           </span>
           <h1>Reparación</h1>
           <p>Ingreso del {formatDate(repair.receivedAt)}</p>
@@ -668,7 +668,7 @@ export default function RepairDetailPage({
               }}
               disabled={actionLoading !== ""}
             >
-              {actionLoading === "payment" || actionLoading === "handover" ? "Registrando..." : showHandoverForm ? "Confirmar entrega" : "Registrar pago"}
+              {actionLoading === "payment" ? "Registrando..." : "Registrar pago"}
             </button>
           </div>
         )}

@@ -13,7 +13,7 @@ function createFakeRepository() {
   return {
     quotes,
 
-    async addInitialDraft(quote) {
+    async addInitialQuote(quote) {
       quotes.push(quote);
     },
   };
@@ -121,7 +121,7 @@ test("rechaza importes inválidos", async () => {
 
 test("propaga los errores del repositorio", async () => {
   const repository = {
-    async addInitialDraft() {
+    async addInitialQuote() {
       throw new Error("Error de persistencia");
     },
   };

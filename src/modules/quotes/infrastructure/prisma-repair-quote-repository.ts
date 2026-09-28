@@ -27,7 +27,7 @@ export class RepairQuoteConflictError extends Error {
 export class PrismaRepairQuoteRepository
   implements RepairQuoteRepository {
 
-  async addInitialDraft(
+  async addInitialQuote(
     quote: RepairQuote,
     changedByUserId?: string | null,
   ): Promise<void> {
@@ -51,11 +51,11 @@ export class PrismaRepairQuoteRepository
       }
 
       // 2. Solo se puede crear el presupuesto
-      // inicial durante el diagnóstico.
+      // inicial desde la recepción.
 
       if (repair.status !== "RECEIVED") {
         throw new RepairQuoteConflictError(
-          "La reparación debe estar en diagnóstico para crear el presupuesto.",
+          "La reparación debe estar recibida para crear el presupuesto.",
         );
       }
 
@@ -63,7 +63,7 @@ export class PrismaRepairQuoteRepository
         where: { id: quote.repairOrderId, status: "RECEIVED", resolution: null },
         data: { status: quote.status === "DRAFT" ? "RECEIVED" : "WAITING_APPROVAL", updatedAt: quote.createdAt },
       });
-      if (updated.count !== 1) throw new RepairQuoteConflictError("La reparaci?n cambi? de estado.");
+      if (updated.count !== 1) throw new RepairQuoteConflictError("La reparación cambió de estado.");
 
       // 3. Comprobar que no existan versiones
       // anteriores para esta reparación.
@@ -84,7 +84,7 @@ export class PrismaRepairQuoteRepository
         );
       }
 
-      // 4. Guardar el borrador inicial.
+      // 4. Guardar el presupuesto inicial.
 
       await tx.repairQuote.create({
         data: {
@@ -108,7 +108,7 @@ export class PrismaRepairQuoteRepository
         await tx.repairStatusHistory.create({ data: {
           id: randomUUID(), repairOrderId: quote.repairOrderId,
           fromStatus: "RECEIVED", toStatus: "WAITING_APPROVAL",
-          note: "Presupuesto guardado y enviado a aprobaci?n.", changedAt: quote.createdAt,
+          note: "Presupuesto guardado y enviado a aprobación.", changedAt: quote.createdAt,
           changedByUserId: changedByUserId ?? null,
         } });
       }

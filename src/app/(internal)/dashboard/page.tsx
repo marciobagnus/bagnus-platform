@@ -17,6 +17,7 @@ import {
 type DashboardRepair = {
   id: string;
   status: RepairStatus;
+  resolution: "REPAIRED" | "QUOTE_REJECTED" | null;
   reportedIssue: string;
   receivedAt: string;
   updatedAt: string;
@@ -176,7 +177,7 @@ export default function DashboardPage() {
                         <span
                           className={`${styles.badge} ${styles[`status${repair.status}`]}`}
                         >
-                          {getRepairStatusLabel(repair.status)}
+                          {getRepairStatusLabel(repair.status, repair.resolution)}
                         </span>
                       </td>
                       <td>{repair.reportedIssue}</td>

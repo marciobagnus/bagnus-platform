@@ -10,7 +10,7 @@ import {
 
 import {
   RepairStatusConflictError,
-} from "../../../../../modules/repairs/application/update-repair-status";
+} from "../../../../../modules/repairs/application/repair-status-repository";
 
 import {
   PrismaRepairStatusRepository,

@@ -7,6 +7,7 @@ export const FINAL_REPAIR_STATUSES: RepairStatus[] = [
 export type RepairDashboardItem = {
   id: string;
   status: RepairStatus;
+  resolution: "REPAIRED" | "QUOTE_REJECTED" | null;
   reportedIssue: string;
   receivedAt: Date;
   updatedAt: Date;
