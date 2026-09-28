@@ -82,9 +82,12 @@ In particular:
 
 - Do not permit two simultaneous open repair orders for the same machine.
 - Preserve the existing quotation approval and rejection workflows.
-- Preserve the existing diagnosis charge and waiver rules.
+- Diagnosis is free. Do not create new DiagnosisCharge records or synthetic waivers.
 - Preserve backend validation of payments and outstanding balances.
-- Do not allow equipment handover when the current business rules prohibit it.
+- Allow handover with outstanding debt for ADMIN and STAFF, with optional atomic payment.
+- Allow payments after DELIVERED without changing status, resolution, or deliveredAt.
+- Use only RECEIVED, WAITING_APPROVAL, IN_REPAIR, READY_FOR_PICKUP and DELIVERED operationally.
+- Persist REPAIRED or QUOTE_REJECTED as a separate resolution; calculate financial status.
 - Do not introduce administrative exceptions without explicit requirements.
 - Do not alter historical financial or audit records to simplify a workflow.
 
@@ -201,3 +204,13 @@ npx tsc --noEmit --incremental false
 npm run lint -- --max-warnings 0
 npm run build
 ```
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

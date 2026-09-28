@@ -52,10 +52,12 @@ Una sola aplicación; sin microservicios para el MVP.
 
 - customers: clientes.
 - machines: máquinas y su relación con el cliente.
-- repairs: órdenes, historial de estados, presupuestos
-  y cargos de diagnóstico.
+- repairs: órdenes, historial operativo y saldos pendientes.
+- quotes: presupuestos y decisiones del cliente.
+- payments: pagos y cuenta calculada; diagnóstico gratuito.
+- users: usuarios internos, sesiones y auditorías.
 
-InternalUser se incorporará al abordar identidad y acceso.
+El flujo operativo tiene cinco estados y permite entrega con deuda y pagos posteriores. Ver [implementación y verificación](docs/SIMPLIFIED_REPAIR_WORKFLOW.md) antes de migrar o publicar.
 
 ### Organización del código
 
