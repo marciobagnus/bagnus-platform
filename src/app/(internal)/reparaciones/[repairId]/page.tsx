@@ -465,7 +465,6 @@ export default function RepairDetailPage({
         <div className={styles.sectionHeader}>
           <div>
             <h2>Acciones</h2>
-            <p>Operaciones disponibles para el estado actual.</p>
           </div>
         </div>
 
@@ -475,7 +474,6 @@ export default function RepairDetailPage({
           <div className={styles.actionStack}>
             {currentQuote ? (
               <>
-                <QuoteSummary quote={currentQuote} />
                 <button
                   className={styles.primaryButton}
                   type="button"
@@ -505,7 +503,6 @@ export default function RepairDetailPage({
 
         {repair.status === "WAITING_APPROVAL" && currentQuote && (
           <div className={styles.actionStack}>
-            <QuoteSummary quote={currentQuote} />
             {quoteWhatsAppLink ? (
               <a
                 className={styles.whatsappButton}
@@ -578,7 +575,7 @@ export default function RepairDetailPage({
         <p className={styles.whatsappHint}>Los avisos por WhatsApp se envían manualmente desde la aplicación.</p>
       </section>
 
-      {currentQuote && repair.status !== "RECEIVED" && (
+      {currentQuote && (
         <section className={styles.card}>
           <h2>Presupuesto vigente</h2>
           <QuoteSummary quote={currentQuote} />
@@ -677,7 +674,9 @@ export default function RepairDetailPage({
       {repair.status === "READY_FOR_PICKUP" && (
         <section className={styles.card}>
           <h2>Entrega</h2>
-          <p>Podés entregar la máquina y registrar un pago ahora, o cobrar el saldo más adelante.</p>
+          <p>{repair.billing.hasOutstandingBalance
+            ? "Podés entregar la máquina y registrar un pago ahora, o cobrar el saldo más adelante."
+            : "La máquina está lista para retirar."}</p>
           <button className={styles.primaryButton} disabled={actionLoading !== ""} type="button"
             onClick={() => {setActionError("");setPaymentAmount("0");setPaymentMethod("CASH");setPaymentReference("");setPaymentNote("");setShowHandoverForm(true);}}>
             Entregar máquina
@@ -821,7 +820,11 @@ export default function RepairDetailPage({
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="payment-title">{showHandoverForm ? "Entregar máquina" : "Registrar pago"}</h2>
-                <p>Saldo actual: {formatCurrency(repair.billing.outstandingBalance ?? "0.00")}. {showHandoverForm ? "Ingresá 0 para entregar sin pago." : "Ingresá el importe y el medio de pago."}</p>
+                {showHandoverForm && !repair.billing.hasOutstandingBalance ? (
+                  <p>La máquina está lista para retirar.{repair.resolution === "QUOTE_REJECTED" ? " El diagnóstico no tiene costo." : ""}</p>
+                ) : (
+                  <p>Saldo actual: {formatCurrency(repair.billing.outstandingBalance ?? "0.00")}. {showHandoverForm ? "Ingresá 0 para entregar sin pago." : "Ingresá el importe y el medio de pago."}</p>
+                )}
               </div>
               <button
                 className={styles.close}
@@ -834,6 +837,7 @@ export default function RepairDetailPage({
             </div>
             {actionError && <div className={styles.formError}>{actionError}</div>}
             <form className={styles.form} onSubmit={showHandoverForm ? handOverMachine : submitPayment}>
+              {(!showHandoverForm || repair.billing.hasOutstandingBalance) && (<>
               <label>
                 Importe
                 <input
@@ -863,6 +867,7 @@ export default function RepairDetailPage({
                 Nota (opcional)
                 <textarea value={paymentNote} onChange={(event) => setPaymentNote(event.target.value)} rows={3} />
               </label>
+              </>)}
               <div className={styles.modalActions}>
                 <button className={styles.secondaryButton} type="button" onClick={() => {setShowPaymentForm(false);setShowHandoverForm(false);}}>
                   Cancelar
@@ -907,13 +912,13 @@ function QuoteSummary({
       </dl>
       <p>{quote.description}</p>
       {quote.decisions[0] && (
-        <p className={styles.decisionInfo}>
-          Decisión: {quote.decisions[0].approved ? "Aprobado" : "Rechazado"}
-          {` - ${DECISION_CHANNELS[quote.decisions[0].channel as keyof typeof DECISION_CHANNELS] ?? quote.decisions[0].channel}`}
-          {` - ${formatDateTime(quote.decisions[0].decidedAt)}`}
-          {` - ${quote.decisions[0].recordedBy?.displayName ?? "Sistema / histórico"}`}
-          {quote.decisions[0].note ? ` - ${quote.decisions[0].note}` : ""}
-        </p>
+        <dl className={styles.decisionInfo}>
+          <div><dt>Decisión</dt><dd>{quote.decisions[0].approved ? "Aprobado" : "Rechazado"}</dd></div>
+          <div><dt>Canal</dt><dd>{DECISION_CHANNELS[quote.decisions[0].channel as keyof typeof DECISION_CHANNELS] ?? quote.decisions[0].channel}</dd></div>
+          <div><dt>Fecha</dt><dd>{formatDateTime(quote.decisions[0].decidedAt)}</dd></div>
+          <div><dt>Registrado por</dt><dd>{quote.decisions[0].recordedBy?.displayName ?? "Sistema / histórico"}</dd></div>
+          {quote.decisions[0].note && <div className={styles.decisionNote}><dt>Nota</dt><dd>{quote.decisions[0].note}</dd></div>}
+        </dl>
       )}
     </div>
   );
