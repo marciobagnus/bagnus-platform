@@ -229,9 +229,6 @@ test(
           assert.ok(newRepair);
           assert.equal(newRepair.status, "RECEIVED");
 
-          console.log(
-            `Escenario aprobado: ${scenario.name}`,
-          );
         } finally {
           // Eliminar exclusivamente los datos
           // pertenecientes a este escenario.

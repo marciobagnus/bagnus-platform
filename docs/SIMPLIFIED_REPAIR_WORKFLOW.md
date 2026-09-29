@@ -54,7 +54,7 @@ Entorno: PostgreSQL 18 **nuevo y efímero**, en loopback `127.0.0.1:55439`, base
 - Cobertura nueva: grafo completo sin autortransiciones; creación/envío y decisión atómicos; atribución y reversión; finalizar con presupuesto consistente; retiro con 0/parcial/total; concurrencia entre cobro/entrega y doble entrega; pagos posteriores sin alterar entrega; reingreso con deuda y unicidad; saldos más allá de 100 órdenes; rechazo gratis; autenticación y ambos roles por HTTP; mensajes manuales.
 - La prueba de migración aplica los SQL versionados en un esquema aislado, carga fixtures de los ocho estados y comprueba conversión, conservación de historial y el índice de unicidad. Solo reubica en memoria un calificador `public` explícito de una migración antigua hacia el esquema de prueba; no modifica archivos versionados.
 - Se encontraron y corrigieron errores durante el trabajo, incluido un archivo de ruta con codificación no UTF-8 detectado por las pruebas HTTP. La suite completa final los vuelve a cubrir.
-- **Pendiente de verificación manual:** revisión visual/interactiva en navegador, escritorio y móvil. El navegador de la sesión no estaba disponible (sin instancias conectadas). Las páginas sí respondieron por HTTP autenticado y compilaron; esto no sustituye la prueba visual de formularios.
+- **Limitación de esta etapa inicial:** quedó pendiente la revisión visual/interactiva en navegador; el cierre manual posterior se registra al final de este documento. El navegador de la sesión no estaba disponible (sin instancias conectadas). Las páginas sí respondieron por HTTP autenticado y compilaron; esto no sustituye la prueba visual de formularios.
 
 ## Antes de merge/publicación
 
@@ -94,4 +94,32 @@ El usuario confirmó que los tres recorridos principales funcionan. Se corrigier
 
 Verificaciones de esta revisión: base efímera `bagnus_manual_workflow_20260928` en `127.0.0.1:55439`, identificada mediante consulta al servidor. Suite completa con `--test-concurrency=1`: **123 aprobadas, 0 fallos, 0 omitidas**. Incluye atribución en ambos ingresos, resumen sobre más de 100 órdenes, exclusión de cuentas gratuitas/desconocidas/saldadas, actualización por pagos y ambos recorridos por API para ADMIN y STAFF. Next typegen, TypeScript, lint con cero advertencias y build correctos. No fue necesario ejecutar Prisma validate/generate porque no cambió el schema.
 
-Limitación: el navegador automatizable sigue sin instancias disponibles. Las comprobaciones HTTP y las pruebas de integración no sustituyen la revisión visual de los últimos ajustes en escritorio. La aplicación permanece disponible en `http://127.0.0.1:3000`; no se hizo push, merge ni deploy.
+En esta revisión intermedia, el navegador automatizable seguía sin instancias disponibles. Las comprobaciones HTTP y las pruebas de integración no sustituyen la revisión visual de los últimos ajustes en escritorio. La aplicación permanece disponible en `http://127.0.0.1:3000`; no se hizo push, merge ni deploy.
+
+
+## Cierre para PR
+
+El responsable confirmó la validación manual final satisfactoria de los recorridos aprobado, rechazado y cobranza posterior, los ajustes de presentación y el control mostrar/ocultar contraseña. La comprobación manual fue realizada por el usuario; no se atribuye al navegador automatizado ni implica validación móvil adicional.
+
+Verificación final sobre `bagnus_manual_workflow_20260928`, PostgreSQL local en `127.0.0.1:55439`. Se confirmó también que la sesión emitida por Next.js pertenecía a esa base. No se usaron bases compartidas, Neon, piloto ni producción.
+
+- `npx prisma validate` y `npx prisma generate`: correctos.
+- `npx next typegen` y `npx tsc --noEmit --incremental false`: correctos.
+- `npm run lint -- --max-warnings 0` y `npm run build`: correctos.
+- `node --import tsx --test --test-concurrency=1 tests/*/*.test.mjs tests/*/*.integration.test.ts`: **124 aprobadas, 0 fallos, 0 omitidas** (87 unitarias y 37 integraciones).
+- Al reproducir el comando paralelo anterior de CI, dos pruebas de agregación fallaron por escrituras de otros archivos sobre la misma base. CI ahora serializa los archivos de integración; conserva las operaciones concurrentes explícitas dentro de las pruebas.
+- Las 14 migraciones anteriores conservan sus blobs de Git. Solo se agregan las dos migraciones de reparaciones, en orden. No hay resets automáticos ni migraciones en el build.
+- Se revisó el diff contra `main` y los commits: sin secretos detectados, archivos de entorno, credenciales locales, scripts manuales, datos manuales ni temporales añadidos al versionado. Sin depuración en código de aplicación/tests; la salida normal de los scripts administrativos preexistentes no se modificó.
+
+Este cierre autoriza preparar/push de la rama y abrir el PR; no autoriza merge ni deploy. La rama congelada de presupuestos se conserva.
+
+## Secuencia de despliegue posterior, con autorización independiente
+
+1. Aprobar el PR y la base destino. Verificar host/base y migraciones aplicadas sin exponer credenciales. Respaldar los datos y confirmar un procedimiento de restauración. Revisar los estados antiguos y presupuestos: el mapeo directo está diseñado para datos de desarrollo/prueba; no certifica conversiones de información comercial real.
+2. Preparar el commit revisado con `npm ci`, `npx prisma validate`, `npx prisma generate` y `npm run build`. La instalación/build no debe migrar automáticamente. Confirmar que el proceso de publicación generará Prisma Client para este schema.
+3. Coordinar una ventana de mantenimiento sin escritores de la versión anterior. `main` está asociado a la publicación automática de Vercel: no mergear antes de coordinar la ventana y el orden de migración/publicación.
+4. Con la conexión destino explícitamente verificada y autorizada, ejecutar `npx prisma migrate deploy`. Aplica primero `20260928090000_add_repair_resolution` y luego `20260928100000_contract_repair_workflow`. Confirmar con `npx prisma migrate status`.
+5. Solo después del schema correcto, y con autorización de merge/publicación, activar la versión nueva. Evitar coexistencia de instancias antiguas y nuevas; no restaurar el binario anterior sobre el enum contraído.
+6. Antes de reabrir la operación, comprobar login, atribución del ingreso, aprobación/finalización, rechazo gratuito, entrega parcial, pago posterior, saldos e historial. Si falla la preparación, mantener el mantenimiento y resolver o restaurar de forma coordinada; no hacer reset ni rollback automático.
+
+Riesgos específicos: la contracción del enum es incompatible con el binario anterior; CANCELLED se interpreta como entrega sin reparar de datos de prueba, la fecha histórica puede inferirse de auditoría/updatedAt y las deudas históricas de diagnóstico dejan de participar en la cuenta. Una orden migrada sin presupuesto consistente requiere evaluación antes de operar. Ninguna de estas comprobaciones locales autoriza aplicar la migración a datos reales.
