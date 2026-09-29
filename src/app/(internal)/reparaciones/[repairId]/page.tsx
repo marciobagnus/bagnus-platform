@@ -11,6 +11,7 @@ import Link from "next/link";
 
 import styles from "./repair-detail.module.css";
 import { QuoteWhatsAppEditor } from "./quote-whatsapp-editor";
+import { QuoteDescriptionField } from "./quote-description-field";
 import { OtherRepairsBalanceNotice } from "./other-repairs-balance-notice";
 import type { OutstandingRepairsSummary } from "../../../../modules/repairs/application/outstanding-repairs";
 import {
@@ -754,15 +755,7 @@ export default function RepairDetailPage({
             </div>
             {actionError && <div className={styles.formError}>{actionError}</div>}
             <form className={styles.form} onSubmit={createQuote}>
-              <label>
-                Descripción
-                <textarea
-                  value={quoteDescription}
-                  onChange={(event) => setQuoteDescription(event.target.value)}
-                  rows={4}
-                  required
-                />
-              </label>
+              <QuoteDescriptionField value={quoteDescription} onChange={setQuoteDescription} />
               <label>
                 Importe total (ARS)
                 <input
