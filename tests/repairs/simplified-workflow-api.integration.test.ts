@@ -90,7 +90,14 @@ for (const role of ["ADMIN","STAFF"] as const) for (const decision of ["APPROVED
       assert.equal((await request(`${root}/payments`,"POST",{amount:"1",method:"CASH"})).status,400);
       assert.equal((await request("/api/repairs/outstanding?page=-1")).status,400);
       for (const page of ["/reparaciones",`/reparaciones/${f.repairId}`,"/reparaciones/saldos","/dashboard"]) {
-        assert.equal((await request(page)).status,200);
+        const response = await request(page);
+        assert.equal(response.status,200);
+        if (page === "/reparaciones") {
+          const html = await response.text();
+          const refresh = html.match(/<button\b[^>]*>Actualizar listado<\/button>/)?.[0];
+          assert.ok(refresh, "server renders the refresh button");
+          assert.match(refresh, /\sdisabled(?:=|\s|>)/, "SSR starts disabled, matching the client's initial loading=true");
+        }
       }
     } finally {
       await f.cleanup();

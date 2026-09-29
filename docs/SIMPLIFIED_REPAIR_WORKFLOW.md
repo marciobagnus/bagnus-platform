@@ -81,3 +81,17 @@ No se hizo push, merge, deploy ni cambios en Vercel/Neon. No se utilizó la rama
 | `c1d35ee` | Pruebas completas de API, concurrencia, migración y limpieza final |
 
 El commit documental que contiene este registro actualiza también README, contexto e instrucciones del repositorio, y conserva el bloque de instrucciones generado por Next.js al iniciar desarrollo.
+
+## Ajustes posteriores a la validación manual — 28/09/2026
+
+El usuario confirmó que los tres recorridos principales funcionan. Se corrigieron los hallazgos de esa revisión sin cambiar reglas de negocio ni schema:
+
+- Los nuevos ingresos, por máquina existente o alta coordinada, guardan el usuario autenticado en el primer evento. Se ignora cualquier actor suministrado por el cliente HTTP. Los eventos históricos sin autor se conservan.
+- La entrega sin deuda muestra contenido contextual y confirmación sin campos de cobro; el rechazo recuerda que el diagnóstico es gratuito.
+- El presupuesto aparece una sola vez, en «Presupuesto vigente». Las acciones conservan WhatsApp y aceptación/rechazo. La decisión muestra canal, fecha, usuario y nota separados; se retiró el texto redundante de acciones.
+- Inicio muestra cantidad e importe de saldos pendientes con enlace al listado. El resumen y la consulta paginada comparten la misma definición SQL; las entregadas con deuda no cuentan como trabajos activos.
+- Hidratación: el código inicia `loading = true` sin consultar valores del navegador. Tres respuestas HTTP autenticadas sin caché incluyeron `disabled=""` en «Actualizar listado». Se agregó una aserción de SSR a la integración HTTP. El usuario confirmó que no aparece el aviso al recargar en una ventana privada sin extensiones. No se identificó la causa exacta del perfil habitual; extensión, caché u otro estado son hipótesis, no diagnósticos confirmados. No se modificó el renderizado ni se ocultó el warning.
+
+Verificaciones de esta revisión: base efímera `bagnus_manual_workflow_20260928` en `127.0.0.1:55439`, identificada mediante consulta al servidor. Suite completa con `--test-concurrency=1`: **123 aprobadas, 0 fallos, 0 omitidas**. Incluye atribución en ambos ingresos, resumen sobre más de 100 órdenes, exclusión de cuentas gratuitas/desconocidas/saldadas, actualización por pagos y ambos recorridos por API para ADMIN y STAFF. Next typegen, TypeScript, lint con cero advertencias y build correctos. No fue necesario ejecutar Prisma validate/generate porque no cambió el schema.
+
+Limitación: el navegador automatizable sigue sin instancias disponibles. Las comprobaciones HTTP y las pruebas de integración no sustituyen la revisión visual de los últimos ajustes en escritorio. La aplicación permanece disponible en `http://127.0.0.1:3000`; no se hizo push, merge ni deploy.
