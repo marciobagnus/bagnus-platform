@@ -50,7 +50,8 @@
   gap: 18px;
 }
 
-.form label {
+.form label,
+.passwordField {
   display: grid;
   gap: 7px;
   color: var(--color-muted);
@@ -79,7 +80,7 @@
   outline: none;
 }
 
-.form button {
+.form button[type="submit"] {
   height: 48px;
   border: 0;
   border-radius: 10px;
@@ -91,17 +92,53 @@
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
-.form button:hover:not(:disabled) {
+.form button[type="submit"]:hover:not(:disabled) {
   filter: brightness(0.98);
 }
 
-.form button:active:not(:disabled) {
+.form button[type="submit"]:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.form button:disabled {
+.form button[type="submit"]:disabled {
   cursor: wait;
   opacity: 0.7;
+}
+
+.passwordInput {
+  position: relative;
+  display: grid;
+}
+
+.passwordInput input {
+  min-width: 0;
+  padding-right: 50px;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.passwordToggle:hover {
+  background: var(--color-warm-white);
+  color: var(--color-text);
+}
+
+.passwordToggle:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 1px;
 }
 
 .error {
