@@ -16,6 +16,9 @@ const data = {
   customerName: "Ana Pérez",
   brand: "Singer",
   model: "Heavy Duty 4423",
+  description: "Limpieza, lubricación y puesta a punto.",
+  totalAmount: "200000.00",
+  currency: "ARS",
 };
 
 test("normaliza celulares argentinos internacionales sin duplicar prefijos", () => {
@@ -68,7 +71,11 @@ test("mantiene mensajes separados para presupuesto y reparación finalizada", ()
   const quoteMessage = buildQuoteWhatsAppMessage(data);
   const finishedMessage = buildFinishedRepairWhatsAppMessage(data);
 
-  assert.match(quoteMessage, /presupuesto de reparación/);
+  assert.match(quoteMessage, /presupuesto incluye/);
+  assert.ok(quoteMessage.includes(data.description));
+  assert.match(quoteMessage, /200\.000,00/);
+  assert.ok(quoteMessage.includes(data.customerName));
+  assert.ok(quoteMessage.includes(`${data.brand} ${data.model}`));
   assert.match(finishedMessage, /lista para retirar/);
   assert.doesNotMatch(finishedMessage, /entregada/);
 });

@@ -1,6 +1,6 @@
 import { Prisma } from "../../../generated/prisma/client.ts";
 import { prisma } from "../../../lib/prisma.ts";
-import type { OutstandingRepair, OutstandingRepairsRepository, OutstandingRepairsSummary } from "../application/outstanding-repairs.ts";
+import type { OutstandingRepair, OutstandingRepairsCustomerFilter, OutstandingRepairsRepository, OutstandingRepairsSummary } from "../application/outstanding-repairs.ts";
 
 // One definition of debt for the paginated list and dashboard aggregate.
 // Rejected quotes are free; only a consistent approved obligation can have debt.
@@ -33,12 +33,17 @@ export class PrismaOutstandingRepairsRepository implements OutstandingRepairsRep
     `;
   }
 
-  async getOutstandingSummary(): Promise<OutstandingRepairsSummary> {
+  async getOutstandingSummary(customer?: OutstandingRepairsCustomerFilter): Promise<OutstandingRepairsSummary> {
+    const filter = customer ? Prisma.sql`
+      WHERE r.id <> ${customer.excludeRepairId}::uuid
+        AND r."machineId" IN (SELECT id FROM machines WHERE "customerId" = ${customer.customerId}::uuid)
+    ` : Prisma.empty;
     const [summary] = await prisma.$queryRaw<OutstandingRepairsSummary[]>`
       WITH outstanding AS (${outstandingAccounts})
       SELECT count(*)::integer AS "orderCount",
              round(coalesce(sum(balance), 0), 2)::text AS "totalBalance"
-      FROM outstanding
+      FROM outstanding r
+      ${filter}
     `;
     return summary;
   }

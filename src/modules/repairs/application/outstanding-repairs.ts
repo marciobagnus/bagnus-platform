@@ -4,8 +4,9 @@ export type OutstandingRepair = {
   deliveredAt: Date | null;
 };
 export type OutstandingRepairsSummary = { orderCount: number; totalBalance: string };
+export type OutstandingRepairsCustomerFilter = { customerId: string; excludeRepairId: string };
 export interface OutstandingRepairsRepository {
-  getOutstandingSummary(): Promise<OutstandingRepairsSummary>;
+  getOutstandingSummary(customer?: OutstandingRepairsCustomerFilter): Promise<OutstandingRepairsSummary>;
   findOutstanding(limit: number, offset: number): Promise<OutstandingRepair[]>;
 }
 export async function getOutstandingRepairs(repository: OutstandingRepairsRepository, page = 1) {

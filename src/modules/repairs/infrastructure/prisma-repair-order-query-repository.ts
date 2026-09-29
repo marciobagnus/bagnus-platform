@@ -7,6 +7,7 @@ import type {
 import { calculateRepairAccount } from "../../payments/domain/repair-account.ts";
 
 import { prisma } from "../../../lib/prisma.ts";
+import { PrismaOutstandingRepairsRepository } from "./prisma-outstanding-repairs-repository.ts";
 
 export class PrismaRepairOrderQueryRepository
   implements RepairOrderQueryRepository {
@@ -129,6 +130,10 @@ export class PrismaRepairOrderQueryRepository
 
     return {
       ...repair,
+      otherRepairsOutstanding: await new PrismaOutstandingRepairsRepository().getOutstandingSummary({
+        customerId: repair.machine.customer.id,
+        excludeRepairId: repair.id,
+      }),
       payments: repair.payments.map((payment) => ({
         id: payment.id,
         amount: payment.amount.toFixed(2),

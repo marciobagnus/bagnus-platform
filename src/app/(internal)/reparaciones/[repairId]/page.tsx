@@ -10,6 +10,10 @@ import {
 import Link from "next/link";
 
 import styles from "./repair-detail.module.css";
+import { QuoteWhatsAppEditor } from "./quote-whatsapp-editor";
+import { QuoteDescriptionField } from "./quote-description-field";
+import { OtherRepairsBalanceNotice } from "./other-repairs-balance-notice";
+import type { OutstandingRepairsSummary } from "../../../../modules/repairs/application/outstanding-repairs";
 import {
   getRepairStatusLabel,
   type RepairStatus,
@@ -70,6 +74,7 @@ type Repair = {
     billingResolved: boolean;
     hasOutstandingBalance: boolean;
   };
+  otherRepairsOutstanding: OutstandingRepairsSummary;
   payments: {
     id: string;
     amount: string;
@@ -164,6 +169,7 @@ export default function RepairDetailPage({
   const [actionError, setActionError] = useState("");
   const [actionLoading, setActionLoading] = useState("");
   const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteWhatsAppMessage, setQuoteWhatsAppMessage] = useState<string | null>(null);
   const [quoteDescription, setQuoteDescription] = useState("");
   const [quoteAmount, setQuoteAmount] = useState("");
   const [showDecisionForm, setShowDecisionForm] = useState(false);
@@ -379,7 +385,7 @@ export default function RepairDetailPage({
   };
   const quoteWhatsAppLink = buildWhatsAppLink(
     customer.phone,
-    buildQuoteWhatsAppMessage(whatsappData),
+    "",
   );
   const finishedWhatsAppLink = buildWhatsAppLink(
     customer.phone,
@@ -405,6 +411,8 @@ export default function RepairDetailPage({
           {repair.deliveredAt && <p>Entregada el {formatDateTime(repair.deliveredAt)}</p>}
         </div>
       </header>
+
+      <OtherRepairsBalanceNotice summary={repair.otherRepairsOutstanding} />
 
       <div className={styles.grid}>
         <section className={styles.card}>
@@ -504,18 +512,30 @@ export default function RepairDetailPage({
         {repair.status === "WAITING_APPROVAL" && currentQuote && (
           <div className={styles.actionStack}>
             {quoteWhatsAppLink ? (
-              <a
+              <button
                 className={styles.whatsappButton}
-                href={quoteWhatsAppLink}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
+                onClick={() => setQuoteWhatsAppMessage(buildQuoteWhatsAppMessage({
+                  ...whatsappData,
+                  description: currentQuote.description,
+                  totalAmount: currentQuote.totalAmount,
+                  currency: currentQuote.currency,
+                }))}
               >
-                Enviar aviso por WhatsApp
-              </a>
+                Enviar presupuesto por WhatsApp
+              </button>
             ) : (
               <p className={styles.whatsappHint}>
                 El teléfono no es un celular argentino válido para WhatsApp. Editá la ficha del cliente e ingresá código de área y número celular.
               </p>
+            )}
+            {quoteWhatsAppMessage !== null && (
+              <QuoteWhatsAppEditor
+                phone={customer.phone}
+                message={quoteWhatsAppMessage}
+                onChange={setQuoteWhatsAppMessage}
+                onCancel={() => setQuoteWhatsAppMessage(null)}
+              />
             )}
             <button
               className={styles.primaryButton}
@@ -735,15 +755,7 @@ export default function RepairDetailPage({
             </div>
             {actionError && <div className={styles.formError}>{actionError}</div>}
             <form className={styles.form} onSubmit={createQuote}>
-              <label>
-                Descripción
-                <textarea
-                  value={quoteDescription}
-                  onChange={(event) => setQuoteDescription(event.target.value)}
-                  rows={4}
-                  required
-                />
-              </label>
+              <QuoteDescriptionField value={quoteDescription} onChange={setQuoteDescription} />
               <label>
                 Importe total (ARS)
                 <input

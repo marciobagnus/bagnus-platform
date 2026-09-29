@@ -3,6 +3,7 @@ import type {
   RepairOrder,
   RepairHistoryStatus,
 } from "../domain/repair-order.ts";
+import type { OutstandingRepairsSummary } from "./outstanding-repairs.ts";
 
 export type RepairOrderPaymentSummary = {
   id: string;
@@ -75,6 +76,7 @@ export type RepairOrderDetails = RepairOrder & {
   };
 
   billing: RepairOrderBillingSummary;
+  otherRepairsOutstanding: OutstandingRepairsSummary;
   payments: RepairOrderPaymentSummary[];
   diagnosisCharge: RepairOrderDiagnosisSummary | null;
 

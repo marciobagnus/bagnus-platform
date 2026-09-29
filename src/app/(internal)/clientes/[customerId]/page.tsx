@@ -22,6 +22,8 @@ import {
 } from "../../../../modules/customers/domain/customer-phone";
 
 import styles from "./customer-detail.module.css";
+import { MachineAttributeInput } from "./machine-attribute-input";
+import type { MachineSuggestions } from "../../../../modules/machines/application/machine-suggestions";
 
 type Customer = {
   id: string;
@@ -121,6 +123,21 @@ export default function CustomerDetailPage({
 
   const [machineForm, setMachineForm] =
     useState<MachineForm>(EMPTY_MACHINE);
+
+  const [machineSuggestions, setMachineSuggestions] = useState<MachineSuggestions>({ brands: [], types: [], models: [] });
+
+  useEffect(() => {
+    if (!showMachineForm) return;
+    const controller = new AbortController();
+    void fetch("/api/machines/suggestions", { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const suggestions = await response.json() as MachineSuggestions;
+        if (!controller.signal.aborted) setMachineSuggestions(suggestions);
+      })
+      .catch(() => { /* Suggestions are optional; manual input remains available. */ });
+    return () => controller.abort();
+  }, [showMachineForm]);
 
   const [savingMachine, setSavingMachine] =
     useState(false);
@@ -868,57 +885,18 @@ export default function CustomerDetailPage({
               <div
                 className={styles.twoColumns}
               >
-                <label>
-                  Marca
-                  <input
-                    value={
-                      machineForm.brand
-                    }
-                    onChange={(event) =>
-                      updateMachine(
-                        "brand",
-                        event.target.value,
-                      )
-                    }
-                    required
-                  />
-                </label>
-
-                <label>
-                  Tipo
-                  <input
-                    value={
-                      machineForm.type
-                    }
-                    placeholder="Recta, Overlock..."
-                    onChange={(event) =>
-                      updateMachine(
-                        "type",
-                        event.target.value,
-                      )
-                    }
-                    required
-                  />
-                </label>
+                <MachineAttributeInput label="Marca" listId="machine-brands" value={machineForm.brand}
+                  suggestions={machineSuggestions.brands} onChange={(value) => updateMachine("brand", value)} required />
+                <MachineAttributeInput label="Tipo" listId="machine-types" value={machineForm.type}
+                  suggestions={machineSuggestions.types} onChange={(value) => updateMachine("type", value)}
+                  placeholder="Recta, Overlock..." required />
               </div>
 
               <div
                 className={styles.twoColumns}
               >
-                <label>
-                  Modelo
-                  <input
-                    value={
-                      machineForm.model
-                    }
-                    onChange={(event) =>
-                      updateMachine(
-                        "model",
-                        event.target.value,
-                      )
-                    }
-                  />
-                </label>
+                <MachineAttributeInput label="Modelo" listId="machine-models" value={machineForm.model}
+                  suggestions={machineSuggestions.models} onChange={(value) => updateMachine("model", value)} />
 
                 <label>
                   N° de serie

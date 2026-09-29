@@ -62,4 +62,30 @@ test("summary excludes free, unknown and settled accounts and updates after part
     for (const fixture of fixtures) await fixture.cleanup();
   }
 });
+test("resumen de otras reparaciones excluye la actual, otros clientes y presupuestos rechazados", async () => {
+  const current = await repairFixture("IN_REPAIR", null, "APPROVED", "200000.00");
+  const otherCustomer = await repairFixture("DELIVERED", "REPAIRED", "APPROVED", "500.00");
+  const repository = new PrismaOutstandingRepairsRepository();
+  const filter = { customerId: current.customerId, excludeRepairId: current.repairId };
+  const now = new Date();
+  try {
+    // The customer's own debt is not previous debt; another customer's debt is irrelevant.
+    assert.deepEqual(await repository.getOutstandingSummary(filter), { orderCount: 0, totalBalance: "0.00" });
+    for (const [resolution, status, amount] of [
+      ["REPAIRED", "APPROVED", "100000.00"],
+      ["QUOTE_REJECTED", "REJECTED", "90000.00"],
+    ] as const) {
+      const repairId = randomUUID();
+      await prisma.repairOrder.create({ data: {
+        id: repairId, machineId: current.machineId, reportedIssue: "Histórica", status: "DELIVERED",
+        resolution, deliveredAt: now, receivedAt: new Date("2000-01-01"), createdAt: now, updatedAt: now,
+        quotes: { create: { id: randomUUID(), version: 1, description: "Prueba", status, totalAmount: amount, createdAt: now, updatedAt: now } },
+      } });
+    }
+    assert.deepEqual(await repository.getOutstandingSummary(filter), { orderCount: 1, totalBalance: "100000.00" });
+  } finally {
+    await current.cleanup();
+    await otherCustomer.cleanup();
+  }
+});
 after(()=>prisma.$disconnect());
