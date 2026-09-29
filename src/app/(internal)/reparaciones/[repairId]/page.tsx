@@ -11,6 +11,8 @@ import Link from "next/link";
 
 import styles from "./repair-detail.module.css";
 import { QuoteWhatsAppEditor } from "./quote-whatsapp-editor";
+import { OtherRepairsBalanceNotice } from "./other-repairs-balance-notice";
+import type { OutstandingRepairsSummary } from "../../../../modules/repairs/application/outstanding-repairs";
 import {
   getRepairStatusLabel,
   type RepairStatus,
@@ -71,6 +73,7 @@ type Repair = {
     billingResolved: boolean;
     hasOutstandingBalance: boolean;
   };
+  otherRepairsOutstanding: OutstandingRepairsSummary;
   payments: {
     id: string;
     amount: string;
@@ -407,6 +410,8 @@ export default function RepairDetailPage({
           {repair.deliveredAt && <p>Entregada el {formatDateTime(repair.deliveredAt)}</p>}
         </div>
       </header>
+
+      <OtherRepairsBalanceNotice summary={repair.otherRepairsOutstanding} />
 
       <div className={styles.grid}>
         <section className={styles.card}>

@@ -35,6 +35,23 @@
   gap: 16px;
 }
 
+.otherRepairsNotice {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border: 1px solid #fedf89;
+  border-radius: 12px;
+  background: #fffaeb;
+  color: #93370d;
+}
+
+.otherRepairsNotice a {
+  width: fit-content;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .card,
 .empty,
 .error {
