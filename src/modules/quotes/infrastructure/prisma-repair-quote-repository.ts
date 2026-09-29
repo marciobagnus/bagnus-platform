@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 
 import type {
   RepairQuote,
@@ -26,8 +27,9 @@ export class RepairQuoteConflictError extends Error {
 export class PrismaRepairQuoteRepository
   implements RepairQuoteRepository {
 
-  async addInitialDraft(
+  async addInitialQuote(
     quote: RepairQuote,
+    changedByUserId?: string | null,
   ): Promise<void> {
 
     await prisma.$transaction(async (tx) => {
@@ -49,13 +51,19 @@ export class PrismaRepairQuoteRepository
       }
 
       // 2. Solo se puede crear el presupuesto
-      // inicial durante el diagnóstico.
+      // inicial desde la recepción.
 
-      if (repair.status !== "DIAGNOSING") {
+      if (repair.status !== "RECEIVED") {
         throw new RepairQuoteConflictError(
-          "La reparación debe estar en diagnóstico para crear el presupuesto.",
+          "La reparación debe estar recibida para crear el presupuesto.",
         );
       }
+
+      const updated = await tx.repairOrder.updateMany({
+        where: { id: quote.repairOrderId, status: "RECEIVED", resolution: null },
+        data: { status: quote.status === "DRAFT" ? "RECEIVED" : "WAITING_APPROVAL", updatedAt: quote.createdAt },
+      });
+      if (updated.count !== 1) throw new RepairQuoteConflictError("La reparación cambió de estado.");
 
       // 3. Comprobar que no existan versiones
       // anteriores para esta reparación.
@@ -76,7 +84,7 @@ export class PrismaRepairQuoteRepository
         );
       }
 
-      // 4. Guardar el borrador inicial.
+      // 4. Guardar el presupuesto inicial.
 
       await tx.repairQuote.create({
         data: {
@@ -95,6 +103,15 @@ export class PrismaRepairQuoteRepository
           updatedAt: quote.updatedAt,
         },
       });
+
+      if (quote.status === "WAITING_APPROVAL") {
+        await tx.repairStatusHistory.create({ data: {
+          id: randomUUID(), repairOrderId: quote.repairOrderId,
+          fromStatus: "RECEIVED", toStatus: "WAITING_APPROVAL",
+          note: "Presupuesto guardado y enviado a aprobación.", changedAt: quote.createdAt,
+          changedByUserId: changedByUserId ?? null,
+        } });
+      }
 
     });
   }

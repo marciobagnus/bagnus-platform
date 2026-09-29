@@ -1,13 +1,14 @@
+import type { OutstandingRepairsSummary } from "./outstanding-repairs.ts";
 import type { RepairStatus } from "../domain/repair-order.ts";
 
 export const FINAL_REPAIR_STATUSES: RepairStatus[] = [
   "DELIVERED",
-  "CANCELLED",
 ];
 
 export type RepairDashboardItem = {
   id: string;
   status: RepairStatus;
+  resolution: "REPAIRED" | "QUOTE_REJECTED" | null;
   reportedIssue: string;
   receivedAt: Date;
   updatedAt: Date;
@@ -25,9 +26,9 @@ export type RepairDashboardItem = {
 
 export type RepairDashboard = {
   activeRepairs: number;
+  outstanding: OutstandingRepairsSummary;
   waitingApproval: number;
   readyForPickup: number;
-  awaitingPickupUnrepaired: number;
   recentRepairs: RepairDashboardItem[];
 };
 

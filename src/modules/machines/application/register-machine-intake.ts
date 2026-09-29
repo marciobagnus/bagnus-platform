@@ -7,6 +7,7 @@ import type { RepairOrder } from "../../repairs/domain/repair-order.ts";
 
 export type RegisterMachineIntakeInput = {
   customerId: string;
+  changedByUserId?: string | null;
   brand: string;
   type: string;
   model?: string | null;
@@ -16,7 +17,7 @@ export type RegisterMachineIntakeInput = {
 };
 
 export interface MachineIntakeRepository {
-  add(machine: Machine, repair: RepairOrder): Promise<void>;
+  add(machine: Machine, repair: RepairOrder, changedByUserId?: string | null): Promise<void>;
 }
 
 export async function registerMachineIntake(
@@ -41,7 +42,7 @@ export async function registerMachineIntake(
     now,
   });
 
-  await repository.add(machine, repair);
+  await repository.add(machine, repair, input.changedByUserId ?? null);
 
   return { machine, repair };
 }

@@ -66,7 +66,7 @@ export async function decideRepairQuote(
   const nextRepairStatus =
     input.decision === "APPROVED"
       ? "IN_REPAIR"
-      : "AWAITING_PICKUP_UNREPAIRED";
+      : "READY_FOR_PICKUP";
 
   const statusChange = changeRepairStatus({
     currentStatus: context.repairStatus,

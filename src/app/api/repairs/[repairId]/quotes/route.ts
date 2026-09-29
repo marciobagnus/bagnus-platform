@@ -81,6 +81,7 @@ export async function POST(
     const quote = await createInitialRepairQuote(
       {
         repairOrderId: repairId,
+        changedByUserId: user.id,
         description,
         totalAmount,
       },

@@ -48,6 +48,7 @@ export class PrismaRepairDashboardQueryRepository
       select: {
         id: true,
         status: true,
+        resolution: true,
         reportedIssue: true,
         receivedAt: true,
         updatedAt: true,

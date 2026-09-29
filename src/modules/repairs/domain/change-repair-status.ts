@@ -10,27 +10,22 @@ export type RepairStatusChange = {
   changedAt: Date;
 };
 
-// Primera transición permitida.
-// Ampliaremos este mapa al implementar
-// el diagnóstico, los presupuestos y las entregas.
+// Cada transición corresponde a una operación del taller. Pagos y borradores no cambian el estado.
 
 const allowedTransitions: Record<
   RepairStatus,
   readonly RepairStatus[]
 > = {
-  RECEIVED: ["DIAGNOSING"],
-  DIAGNOSING: ["WAITING_APPROVAL"],
+  RECEIVED: ["WAITING_APPROVAL"],
   WAITING_APPROVAL: [
     "IN_REPAIR",
-    "AWAITING_PICKUP_UNREPAIRED",
+    "READY_FOR_PICKUP",
   ],
   IN_REPAIR: ["READY_FOR_PICKUP"],
 
   READY_FOR_PICKUP: ["DELIVERED"],
 
-  AWAITING_PICKUP_UNREPAIRED: ["CANCELLED"],
   DELIVERED: [],
-  CANCELLED: [],
 };
 
 type ChangeRepairStatusInput = {

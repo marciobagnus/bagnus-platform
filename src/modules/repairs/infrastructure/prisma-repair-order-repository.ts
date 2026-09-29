@@ -10,7 +10,7 @@ import { prisma } from "../../../lib/prisma.ts";
 export class PrismaRepairOrderRepository
   implements RepairOrderRepository {
 
-  async add(repairOrder: RepairOrder): Promise<void> {
+  async add(repairOrder: RepairOrder, changedByUserId?: string | null): Promise<void> {
 
     await prisma.$transaction(async (tx) => {
 
@@ -43,6 +43,7 @@ export class PrismaRepairOrderRepository
           repairOrderId: repairOrder.id,
 
           fromStatus: null,
+          changedByUserId: changedByUserId ?? null,
           toStatus: repairOrder.status,
 
           note: "Ingreso de la máquina al taller.",

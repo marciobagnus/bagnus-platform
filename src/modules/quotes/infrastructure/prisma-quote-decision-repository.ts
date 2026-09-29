@@ -64,6 +64,8 @@ export class PrismaQuoteDecisionRepository
     } = input;
 
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM repair_orders WHERE id = ${repairOrderId}::uuid FOR UPDATE`;
+
 
       // 1. Cambiar el presupuesto solamente
       // si sigue pendiente de aprobación.
@@ -96,10 +98,12 @@ export class PrismaQuoteDecisionRepository
           where: {
             id: repairOrderId,
             status: "WAITING_APPROVAL",
+            resolution: null,
           },
 
           data: {
             status: statusChange.toStatus,
+            resolution: decision === "REJECTED" ? "QUOTE_REJECTED" : null,
             updatedAt: statusChange.changedAt,
           },
         });
@@ -117,6 +121,7 @@ export class PrismaQuoteDecisionRepository
           id: randomUUID(),
           quoteId,
           approved: decision === "APPROVED",
+          recordedByUserId: changedByUserId ?? null,
           channel,
           note,
           decidedAt: statusChange.changedAt,

@@ -89,4 +89,5 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: node --import tsx --test tests/*/*.integration.test.ts
+        # Aggregate assertions share one database; keep test files isolated in time.
+        run: node --import tsx --test --test-concurrency=1 tests/*/*.integration.test.ts

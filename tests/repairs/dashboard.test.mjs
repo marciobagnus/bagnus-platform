@@ -7,7 +7,6 @@ import { FINAL_REPAIR_STATUSES } from "../../src/modules/repairs/application/rep
 test("calcula las métricas y limita los trabajos recientes", async () => {
   assert.deepEqual(FINAL_REPAIR_STATUSES, [
     "DELIVERED",
-    "CANCELLED",
   ]);
 
   const calls = [];
@@ -19,7 +18,6 @@ test("calcula las métricas y limita los trabajos recientes", async () => {
       return {
         WAITING_APPROVAL: 1,
         READY_FOR_PICKUP: 1,
-        AWAITING_PICKUP_UNREPAIRED: 2,
       }[status];
     },
     findRecentActive: async (limit) => {
@@ -28,19 +26,26 @@ test("calcula las métricas y limita los trabajos recientes", async () => {
     },
   };
 
-  const dashboard = await getRepairDashboard(repository);
+  const dashboard = await getRepairDashboard(repository, { async getOutstandingSummary() { return {orderCount:3,totalBalance:"80000.50"}; } });
 
   assert.deepEqual(dashboard, {
     activeRepairs: 4,
+    outstanding: {orderCount:3,totalBalance:"80000.50"},
     waitingApproval: 1,
     readyForPickup: 1,
-    awaitingPickupUnrepaired: 2,
     recentRepairs: [{ id: "recent-repair" }],
   });
 
   assert.deepEqual(calls, [
     "WAITING_APPROVAL",
     "READY_FOR_PICKUP",
-    "AWAITING_PICKUP_UNREPAIRED",
   ]);
+});
+
+test("la cobranza permanece visible aunque no haya trabajos activos", async () => {
+  const dashboard = await getRepairDashboard({
+    async countActiveRepairs(){return 0;}, async countByStatus(){return 0;}, async findRecentActive(){return [];},
+  }, {async getOutstandingSummary(){return {orderCount:2,totalBalance:"15000.25"};}});
+  assert.equal(dashboard.activeRepairs,0);
+  assert.deepEqual(dashboard.outstanding,{orderCount:2,totalBalance:"15000.25"});
 });

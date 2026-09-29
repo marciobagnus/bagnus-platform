@@ -16,13 +16,15 @@ import {
 const scenarios = [
   {
     name: "máquina reparada",
+    resolution: "REPAIRED",
     initialStatus: "READY_FOR_PICKUP",
     expectedFinalStatus: "DELIVERED",
   },
   {
     name: "máquina devuelta sin reparar",
-    initialStatus: "AWAITING_PICKUP_UNREPAIRED",
-    expectedFinalStatus: "CANCELLED",
+    initialStatus: "READY_FOR_PICKUP",
+    resolution: "QUOTE_REJECTED",
+    expectedFinalStatus: "DELIVERED",
   },
 ] as const;
 
@@ -77,6 +79,7 @@ test(
               reportedIssue: "Reparación de prueba.",
               receivedAccessories: null,
               status: scenario.initialStatus,
+              resolution: scenario.resolution,
               receivedAt: now,
               createdAt: now,
               updatedAt: now,
@@ -117,36 +120,13 @@ test(
     description: "Presupuesto de prueba de entrega.",
     totalAmount: "5000.00",
     status:
-      scenario.initialStatus === "READY_FOR_PICKUP"
+      scenario.resolution === "REPAIRED"
         ? "APPROVED"
         : "REJECTED",
     createdAt: now,
     updatedAt: now,
   },
 });
-
-if (scenario.initialStatus === "READY_FOR_PICKUP") {
-  await prisma.payment.create({
-    data: {
-      id: randomUUID(),
-      repairOrderId: firstRepairId,
-      amount: "5000.00",
-      method: "CASH",
-      receivedAt: now,
-      createdAt: now,
-    },
-  });
-} else {
-  await prisma.diagnosisCharge.create({
-    data: {
-      id: randomUUID(),
-      repairOrderId: firstRepairId,
-      decision: "WAIVED",
-      amount: "0.00",
-      decidedAt: now,
-    },
-  });
-}
 
           // 3. Registrar la entrega física de la máquina.
 
@@ -249,9 +229,6 @@ if (scenario.initialStatus === "READY_FOR_PICKUP") {
           assert.ok(newRepair);
           assert.equal(newRepair.status, "RECEIVED");
 
-          console.log(
-            `Escenario aprobado: ${scenario.name}`,
-          );
         } finally {
           // Eliminar exclusivamente los datos
           // pertenecientes a este escenario.

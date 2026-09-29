@@ -28,7 +28,7 @@ export class PrismaMachineListRepository
             repairOrders: {
               where: {
                 status: {
-                  notIn: ["DELIVERED", "CANCELLED"],
+                  not: "DELIVERED",
                 },
               },
               orderBy: {

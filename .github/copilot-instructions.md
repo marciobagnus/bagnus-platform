@@ -55,23 +55,23 @@ Main entities:
 Repair statuses:
 
 - RECEIVED
-- DIAGNOSING
 - WAITING_APPROVAL
 - IN_REPAIR
 - READY_FOR_PICKUP
-- AWAITING_PICKUP_UNREPAIRED
 - DELIVERED
-- CANCELLED
 
 Important business rules:
 
 - Each physical machine intake creates a new RepairOrder.
 - A machine cannot have two open repairs simultaneously.
-- Diagnosis is normally charged only when the customer rejects the repair.
-- Diagnosis can be waived.
+- Diagnosis is free. New orders never create DiagnosisCharge records.
+- RepairResolution is persisted separately: REPAIRED or QUOTE_REJECTED.
+- Create and submit quotes atomically from RECEIVED.
 - Multiple partial payments are allowed.
 - Payments cannot exceed the outstanding balance.
-- A machine cannot normally be handed over with outstanding debt.
+- Both roles can hand over a machine with outstanding debt and optional atomic payment.
+- Delivered orders can receive payments without changing status, resolution or deliveredAt.
+- Financial status is calculated; it is never persisted as source of truth.
 - Financial and repair operations must preserve auditability.
 
 ## Users
@@ -94,7 +94,7 @@ Never store passwords or raw session tokens in plain text.
 Important operations must keep user attribution where supported:
 
 - payment registration
-- diagnosis decisions
+- quotation decisions
 - repair status changes
 
 Do not remove historical/audit records to correct mistakes.
@@ -151,12 +151,11 @@ Typical workflow:
 Cliente
 → Máquina
 → Reparación
-→ Diagnóstico
 → Presupuesto
 → Aprobación/Rechazo
 → Reparación
-→ Pago
-→ Entrega
+→ Entrega (pago opcional)
+→ Pagos posteriores si hay saldo
 
 Avoid adding UI libraries unless explicitly requested.
 
@@ -179,7 +178,9 @@ node --import tsx --test tests/*/*.test.mjs
 
 Integration tests:
 
-node --env-file=.env --import tsx --test tests/*/*.integration.test.ts
+node --import tsx --test --test-concurrency=1 tests/*/*.integration.test.ts
+
+Set DATABASE_URL explicitly to a verified disposable local/test database before integration tests; never load an unverified .env for this purpose.
 
 Some API integration tests require `npm run dev` running on localhost:3000.
 

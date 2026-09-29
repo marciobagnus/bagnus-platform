@@ -25,7 +25,7 @@ const scenarios = [
     name: "rechazo",
     decision: "REJECTED",
     channel: "PHONE",
-    expectedRepairStatus: "AWAITING_PICKUP_UNREPAIRED",
+    expectedRepairStatus: "READY_FOR_PICKUP",
     approved: false,
   },
 ] as const;

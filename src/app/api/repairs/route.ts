@@ -100,6 +100,7 @@ if (!user) {
     const repair = await registerRepairOrder(
       {
         machineId,
+        changedByUserId: user.id,
         reportedIssue,
         receivedAccessories,
       },

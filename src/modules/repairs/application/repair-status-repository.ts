@@ -1,3 +1,4 @@
+import type { Payment } from "../../payments/domain/payment.ts";
 
 import type {
   RepairStatus,
@@ -18,6 +19,16 @@ export interface RepairStatusRepository {
     expectedStatus: RepairStatus,
     change: RepairStatusChange,
     changedByUserId?: string | null,
+    payment?: Payment | null,
   ): Promise<void>;
 
+}
+export class RepairStatusConflictError extends Error {
+  constructor() {
+    super(
+      "La reparación fue modificada por otra operación. Consultá su estado actual e intentá nuevamente.",
+    );
+
+    this.name = "RepairStatusConflictError";
+  }
 }

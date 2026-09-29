@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     const result = await registerMachineIntake(
       {
         customerId,
+        changedByUserId: user.id,
         brand,
         type,
         model,

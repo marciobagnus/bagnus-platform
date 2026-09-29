@@ -138,6 +138,7 @@ test("edita un cliente y registra un ingreso coordinado mediante APIs autenticad
         type: "Recta",
         model: "4423",
         reportedIssue: "No arrastra la tela.",
+        changedByUserId: randomUUID(), // The API must use the authenticated actor.
         receivedAccessories: "Pedal",
       }),
     });
@@ -148,6 +149,10 @@ test("edita un cliente y registra un ingreso coordinado mediante APIs autenticad
     assert.equal(intakeResponse.status, 201);
     assert.equal(intake.repair.machineId, machineId);
     assert.equal(intake.repair.status, "RECEIVED");
+    const initialHistory = await prisma.repairStatusHistory.findFirstOrThrow({where:{repairOrderId:repairId}});
+    assert.equal(initialHistory.changedByUserId,userId);
+    const detail = await (await fetch(`${BASE_URL}/api/repairs/${repairId}`,{headers:authenticatedHeaders})).json();
+    assert.equal(detail.statusHistory[0].changedBy.displayName,user.displayName);
   } finally {
     if (repairId) {
       await prisma.repairStatusHistory.deleteMany({ where: { repairOrderId: repairId } });

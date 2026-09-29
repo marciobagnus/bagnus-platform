@@ -1,16 +1,5 @@
-import {
-  calculateRepairBalance,
-} from "../domain/repair-balance.ts";
-
-import {
-  determineRepairAmountDue,
-  type RepairBillingSituation,
-} from "../domain/repair-amount-due.ts";
-
-export type RepairBillingData = {
-  situation: RepairBillingSituation;
-  payments: string[];
-};
+import { calculateRepairAccount, type RepairAccountSource } from "../domain/repair-account.ts";
+export type RepairBillingData = RepairAccountSource;
 
 export interface RepairBalanceRepository {
   findBillingData(
@@ -36,23 +25,12 @@ export async function getRepairBalance(
     throw new Error("La reparación indicada no existe.");
   }
 
-  const amountDue = determineRepairAmountDue(data.situation);
-
-  if (amountDue.status === "PENDING" || amountDue.totalAmount === null) {
-    return {
-      status: "PENDING" as const,
-      totalAmount: null,
-      paidAmount: null,
-      outstandingAmount: null,
-      creditAmount: null,
-    };
-  }
-
+  const account = calculateRepairAccount(data);
   return {
-    status: "DETERMINED" as const,
-    ...calculateRepairBalance({
-      totalAmount: amountDue.totalAmount,
-      payments: data.payments,
-    }),
+    status: account.billingResolved ? "DETERMINED" as const : "PENDING" as const,
+    totalAmount: account.amountDue,
+    paidAmount: account.totalPaid,
+    outstandingAmount: account.outstandingBalance,
+    creditAmount: account.creditAmount,
   };
 }

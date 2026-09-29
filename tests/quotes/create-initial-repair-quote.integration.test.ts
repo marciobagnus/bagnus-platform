@@ -59,7 +59,7 @@ test("crea un presupuesto inicial en PostgreSQL y evita duplicados", async () =>
         machineId,
         reportedIssue: "Problema de arrastre.",
         receivedAccessories: null,
-        status: "DIAGNOSING",
+        status: "RECEIVED",
         receivedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -78,7 +78,7 @@ test("crea un presupuesto inicial en PostgreSQL y evita duplicados", async () =>
     );
 
     assert.equal(quote.version, 1);
-    assert.equal(quote.status, "DRAFT");
+    assert.equal(quote.status, "WAITING_APPROVAL");
 
     // 3. Consultar lo que realmente quedó guardado.
 
@@ -92,7 +92,7 @@ test("crea un presupuesto inicial en PostgreSQL y evita duplicados", async () =>
 
     assert.equal(savedQuote.repairOrderId, repairId);
     assert.equal(savedQuote.version, 1);
-    assert.equal(savedQuote.status, "DRAFT");
+    assert.equal(savedQuote.status, "WAITING_APPROVAL");
     assert.equal(
       savedQuote.description,
       "Reparación y puesta a punto.",
@@ -130,8 +130,7 @@ test("crea un presupuesto inicial en PostgreSQL y evita duplicados", async () =>
 
     assert.equal(quotes.length, 1);
 
-    // 6. Comprobar que crear el borrador
-    // no modificó el estado de la reparación.
+    // 6. Crear y enviar cambia la reparación y registra una transición.
 
     const repair = await prisma.repairOrder.findUnique({
       where: {
@@ -139,7 +138,8 @@ test("crea un presupuesto inicial en PostgreSQL y evita duplicados", async () =>
       },
     });
 
-    assert.equal(repair?.status, "DIAGNOSING");
+    assert.equal(repair?.status, "WAITING_APPROVAL");
+    assert.equal(await prisma.repairStatusHistory.count({where:{repairOrderId:repairId}}), 1);
 
   } finally {
     // Borrar solamente los registros de esta prueba.

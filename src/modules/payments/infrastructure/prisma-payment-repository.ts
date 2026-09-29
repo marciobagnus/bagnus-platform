@@ -1,9 +1,6 @@
 import { prisma } from "../../../lib/prisma.ts";
 
-import {
-  calculateRepairBalance,
-  assertPaymentWithinBalance,
-} from "../domain/repair-balance.ts";
+import { assertRepairPaymentAllowed } from "../domain/repair-account.ts";
 
 import type { Payment } from "../domain/payment.ts";
 import type { PaymentRepository } from "../application/payment-repository.ts";
@@ -38,73 +35,9 @@ export class PrismaPaymentRepository implements PaymentRepository {
 
       const repair = await tx.repairOrder.findUniqueOrThrow({
         where: { id: payment.repairOrderId },
-        select: {
-          status: true,
-          quotes: {
-            where: {
-              status: { in: ["APPROVED", "REJECTED"] },
-            },
-            select: {
-              status: true,
-              totalAmount: true,
-              version: true,
-            },
-            orderBy: { version: "desc" },
-          },
-          diagnosisCharge: {
-            select: {
-              decision: true,
-              amount: true,
-            },
-          },
-          payments: {
-            select: { amount: true },
-          },
-        },
+        include: { quotes: true, payments: true },
       });
-
-      const approvedQuote = repair.quotes.find(
-        (quote) => quote.status === "APPROVED",
-      );
-
-      let totalAmount: string | null = null;
-
-      if (approvedQuote) {
-        totalAmount = approvedQuote.totalAmount.toFixed(2);
-      } else {
-        const rejectedQuote = repair.quotes.some(
-          (quote) => quote.status === "REJECTED",
-        );
-
-        const rejectedRepair =
-          repair.status === "AWAITING_PICKUP_UNREPAIRED" ||
-          repair.status === "CANCELLED";
-
-        if (
-          rejectedRepair &&
-          rejectedQuote &&
-          repair.diagnosisCharge
-        ) {
-          totalAmount =
-            repair.diagnosisCharge.amount.toFixed(2);
-        }
-      }
-
-      if (totalAmount === null) {
-        throw new PaymentConflictError(
-          "Todavía no está determinado el importe a cobrar.",
-        );
-      }
-
-      const balance = calculateRepairBalance({
-        totalAmount,
-        payments: repair.payments.map(
-          (existingPayment) =>
-            existingPayment.amount.toFixed(2),
-        ),
-      });
-
-      assertPaymentWithinBalance(balance, payment.amount);
+      assertRepairPaymentAllowed(repair, payment.amount);
 
       await tx.payment.create({
         data: {

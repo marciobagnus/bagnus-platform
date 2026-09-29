@@ -3,13 +3,14 @@ import { NextResponse } from "next/server";
 
 import {
   processRepairAction,
+  RepairActionInputError,
   RepairActionNotFoundError,
   RepairActionConflictError,
 } from "../../../../../modules/repairs/application/process-repair-action";
 
 import {
   RepairStatusConflictError,
-} from "../../../../../modules/repairs/application/update-repair-status";
+} from "../../../../../modules/repairs/application/repair-status-repository";
 
 import {
   PrismaRepairStatusRepository,
@@ -63,7 +64,7 @@ if (!user) {
     );
   }
 
-  const { action, note } =
+  const { action, note, payment } =
     body as Record<string, unknown>;
 
   if (
@@ -79,6 +80,13 @@ if (!user) {
     );
   }
 
+  if (payment != null && (typeof payment !== "object" || Array.isArray(payment)
+    || typeof (payment as Record<string, unknown>).amount !== "string"
+    || !["CASH", "TRANSFER", "CARD", "OTHER"].includes(String((payment as Record<string, unknown>).method))
+    || ["reference", "note"].some(key => (payment as Record<string, unknown>)[key] != null && typeof (payment as Record<string, unknown>)[key] !== "string"))) {
+    return NextResponse.json({ error: "El pago no es válido." }, { status: 400 });
+  }
+
   try {
     const repository =
       new PrismaRepairStatusRepository();
@@ -89,6 +97,7 @@ if (!user) {
         action,
         note,
         changedByUserId: user.id,
+        payment: payment as import("../../../../../modules/repairs/application/process-repair-action").ProcessRepairActionInput["payment"],
       },
       repository,
     );
@@ -102,6 +111,7 @@ if (!user) {
     );
 
   } catch (error) {
+    if (error instanceof RepairActionInputError) return NextResponse.json({ error: error.message }, { status: 400 });
     if (
       error instanceof Error &&
       error.message ===

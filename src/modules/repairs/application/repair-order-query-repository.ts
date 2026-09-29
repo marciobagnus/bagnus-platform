@@ -1,7 +1,7 @@
 
 import type {
   RepairOrder,
-  RepairStatus,
+  RepairHistoryStatus,
 } from "../domain/repair-order.ts";
 
 export type RepairOrderPaymentSummary = {
@@ -36,6 +36,8 @@ export type RepairOrderBillingSummary = {
   totalPaid: string;
   outstandingBalance: string | null;
   currency: string;
+  creditAmount: string | null;
+  financialStatus: string;
   billingResolved: boolean;
   hasOutstandingBalance: boolean;
 };
@@ -54,6 +56,7 @@ export type RepairOrderDetails = RepairOrder & {
       channel: string;
       note: string | null;
       decidedAt: Date;
+      recordedBy: { id: string; displayName: string } | null;
     }[];
   }[];
 
@@ -77,8 +80,8 @@ export type RepairOrderDetails = RepairOrder & {
 
   statusHistory: {
     id: string;
-    fromStatus: RepairStatus | null;
-    toStatus: RepairStatus;
+    fromStatus: RepairHistoryStatus | null;
+    toStatus: RepairHistoryStatus;
     note: string | null;
     changedAt: Date;
     changedBy: {

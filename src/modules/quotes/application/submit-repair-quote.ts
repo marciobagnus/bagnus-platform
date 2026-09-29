@@ -57,11 +57,11 @@ export async function submitRepairQuote(
     );
   }
 
-  // 3. La reparación debe continuar en diagnóstico.
+  // 3. La reparación debe continuar recibida.
 
-  if (context.repairStatus !== "DIAGNOSING") {
+  if (context.repairStatus !== "RECEIVED") {
     throw new QuoteSubmissionConflictError(
-      "La reparación debe estar en diagnóstico para informar el presupuesto.",
+      "La reparación debe estar recibida para informar el presupuesto.",
     );
   }
 

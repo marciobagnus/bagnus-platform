@@ -17,6 +17,7 @@ import {
 type DashboardRepair = {
   id: string;
   status: RepairStatus;
+  resolution: "REPAIRED" | "QUOTE_REJECTED" | null;
   reportedIssue: string;
   receivedAt: string;
   updatedAt: string;
@@ -34,9 +35,9 @@ type DashboardRepair = {
 
 type DashboardData = {
   activeRepairs: number;
+  outstanding: { orderCount: number; totalBalance: string };
   waitingApproval: number;
   readyForPickup: number;
-  awaitingPickupUnrepaired: number;
   recentRepairs: DashboardRepair[];
 };
 
@@ -124,12 +125,13 @@ export default function DashboardPage() {
           <strong>{dashboard?.readyForPickup ?? "-"}</strong>
         </article>
 
-        <article>
-          <span>Retiro sin reparar</span>
-          <strong>
-            {dashboard?.awaitingPickupUnrepaired ?? "-"}
-          </strong>
-        </article>
+        <Link href="/reparaciones/saldos" className={styles.balanceCard}>
+          <span>Saldos pendientes</span>
+          <strong>{dashboard?.outstanding.orderCount ?? "-"}</strong>
+          <span>{dashboard
+            ? new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(Number(dashboard.outstanding.totalBalance))
+            : "-"} por cobrar</span>
+        </Link>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}
@@ -184,7 +186,7 @@ export default function DashboardPage() {
                         <span
                           className={`${styles.badge} ${styles[`status${repair.status}`]}`}
                         >
-                          {getRepairStatusLabel(repair.status)}
+                          {getRepairStatusLabel(repair.status, repair.resolution)}
                         </span>
                       </td>
                       <td>{repair.reportedIssue}</td>

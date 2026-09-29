@@ -42,6 +42,7 @@ test("incluye resumen financiero, pagos y diagnóstico en el detalle de reparaci
         machineId,
         reportedIssue: "No centrifuga",
         status: "READY_FOR_PICKUP",
+        resolution: "REPAIRED",
         receivedAt: now,
         createdAt: now,
         updatedAt: now,

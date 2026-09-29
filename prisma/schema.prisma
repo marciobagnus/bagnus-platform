@@ -47,6 +47,15 @@ model Machine {
 
 enum RepairStatus {
   RECEIVED
+  WAITING_APPROVAL
+  IN_REPAIR
+  READY_FOR_PICKUP
+  DELIVERED
+}
+
+// Legacy values are read-only history; never operational states.
+enum RepairHistoryStatus {
+  RECEIVED
   DIAGNOSING
   WAITING_APPROVAL
   IN_REPAIR
@@ -64,6 +73,8 @@ model RepairOrder {
   receivedAccessories String?
 
   status RepairStatus @default(RECEIVED)
+  resolution RepairResolution?
+  deliveredAt DateTime?
 
   receivedAt DateTime
   createdAt  DateTime
@@ -84,13 +95,18 @@ model RepairOrder {
   @@map("repair_orders")
 }
 
+enum RepairResolution {
+  REPAIRED
+  QUOTE_REJECTED
+}
+
 model RepairStatusHistory {
   id              String  @id @db.Uuid
   repairOrderId   String  @db.Uuid
   changedByUserId String? @db.Uuid
 
-  fromStatus RepairStatus?
-  toStatus   RepairStatus
+  fromStatus RepairHistoryStatus?
+  toStatus   RepairHistoryStatus
 
   note      String?
   changedAt DateTime
@@ -146,6 +162,7 @@ model RepairQuote {
 model QuoteDecision {
   id      String @id @db.Uuid
   quoteId String @db.Uuid
+  recordedByUserId String? @db.Uuid
 
   approved Boolean
   channel  QuoteDecisionChannel
@@ -154,9 +171,11 @@ model QuoteDecision {
   decidedAt DateTime
 
   quote RepairQuote @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  recordedBy InternalUser? @relation("QuoteDecisionRecordedBy", fields: [recordedByUserId], references: [id], onDelete: Restrict)
 
   @@unique([quoteId])
   @@index([quoteId])
+  @@index([recordedByUserId])
   @@map("quote_decisions")
 }
 
@@ -240,6 +259,7 @@ model InternalUser {
   recordedPayments   Payment[]             @relation("PaymentRecordedBy")
   diagnosisDecisions DiagnosisCharge[]     @relation("DiagnosisDecidedBy")
   statusChanges      RepairStatusHistory[] @relation("RepairStatusChangedBy")
+  quoteDecisions QuoteDecision[] @relation("QuoteDecisionRecordedBy")
 
   @@map("internal_users")
 }

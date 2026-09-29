@@ -15,6 +15,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState("");
   const [notice] = useState(() =>
@@ -120,21 +121,48 @@ export default function LoginPage() {
             />
           </label>
 
-          <label>
-            Contraseña
-
-            <input
-              type="password"
-              value={password}
-              autoComplete="current-password"
-              onChange={(event) =>
-                setPassword(
-                  event.target.value,
-                )
-              }
-              required
-            />
-          </label>
+          <div className={styles.passwordField}>
+            <label htmlFor="login-password">Contraseña</label>
+            <div className={styles.passwordInput}>
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                autoComplete="current-password"
+                onChange={(event) =>
+                  setPassword(
+                    event.target.value,
+                  )
+                }
+                required
+              />
+              <button
+                className={styles.passwordToggle}
+                type="button"
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-controls="login-password"
+                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  {showPassword && <path d="m3 3 18 18" />}
+                </svg>
+              </button>
+            </div>
+          </div>
 
           {error && (
             <div className={styles.error}>

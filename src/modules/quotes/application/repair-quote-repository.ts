@@ -2,7 +2,8 @@
 import type { RepairQuote } from "../domain/repair-quote.ts";
 
 export interface RepairQuoteRepository {
-  addInitialDraft(
+  addInitialQuote(
     quote: RepairQuote,
+    changedByUserId?: string | null,
   ): Promise<void>;
 }

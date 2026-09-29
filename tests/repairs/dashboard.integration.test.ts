@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { randomInt, randomUUID } from "node:crypto";
 import { test } from "node:test";
 
+import { PrismaOutstandingRepairsRepository } from "../../src/modules/repairs/infrastructure/prisma-outstanding-repairs-repository.ts";
+import { repairFixture } from "../helpers/repair-fixture.ts";
 import { prisma } from "../../src/lib/prisma.ts";
 
 import {
@@ -17,15 +19,15 @@ const BASE_URL =
 
 const ACTIVE_STATUSES = [
   "RECEIVED",
-  "DIAGNOSING",
+  "RECEIVED",
   "WAITING_APPROVAL",
   "IN_REPAIR",
   "READY_FOR_PICKUP",
-  "AWAITING_PICKUP_UNREPAIRED",
+  "READY_FOR_PICKUP",
   "RECEIVED",
   "IN_REPAIR",
   "RECEIVED",
-  "DIAGNOSING",
+  "RECEIVED",
   "IN_REPAIR",
   "RECEIVED",
 ] as const;
@@ -39,6 +41,7 @@ test("protege y calcula correctamente el dashboard", async () => {
   const machineIds: string[] = [];
   const repairIds: string[] = [];
   let userId: string | undefined;
+  let debtFixture: Awaited<ReturnType<typeof repairFixture>> | undefined;
 
   try {
     const user = await createInternalUser(
@@ -122,7 +125,7 @@ test("protege y calcula correctamente el dashboard", async () => {
       });
     }
 
-    for (const status of ["DELIVERED", "CANCELLED"] as const) {
+    for (const status of ["DELIVERED", "DELIVERED"] as const) {
       const repairId = randomUUID();
       const machineId = randomUUID();
       machineIds.push(machineId);
@@ -175,7 +178,6 @@ test("protege y calcula correctamente el dashboard", async () => {
     );
     assert.ok(dashboard.waitingApproval >= 1);
     assert.ok(dashboard.readyForPickup >= 1);
-    assert.ok(dashboard.awaitingPickupUnrepaired >= 1);
     assert.equal(dashboard.recentRepairs.length, 10);
     assert.equal(
       dashboard.recentRepairs[0].id,
@@ -188,11 +190,26 @@ test("protege y calcula correctamente el dashboard", async () => {
     assert.equal(
       dashboard.recentRepairs.some(
         (repair: { status: string }) =>
-          repair.status === "DELIVERED" ||
-          repair.status === "CANCELLED",
+          repair.status === "DELIVERED",
       ),
       false,
     );
+
+    assert.deepEqual(dashboard.outstanding, await new PrismaOutstandingRepairsRepository().getOutstandingSummary());
+    debtFixture = await repairFixture("DELIVERED", "REPAIRED", "APPROVED", "123.45");
+    const withDebt = await (await fetch(`${BASE_URL}/api/dashboard`, {headers:authenticatedHeaders})).json();
+    const cents = (amount: string) => BigInt(amount.replace(".", ""));
+    assert.equal(withDebt.activeRepairs, dashboard.activeRepairs);
+    assert.equal(withDebt.outstanding.orderCount, dashboard.outstanding.orderCount + 1);
+    assert.equal(cents(withDebt.outstanding.totalBalance), cents(dashboard.outstanding.totalBalance) + 12345n);
+    const payment = await fetch(`${BASE_URL}/api/repairs/${debtFixture.repairId}/payments`, {
+      method:"POST", headers:{...authenticatedHeaders,"Content-Type":"application/json"},
+      body:JSON.stringify({amount:"123.45",method:"CASH"}),
+    });
+    assert.equal(payment.status, 201);
+    const afterPayment = await (await fetch(`${BASE_URL}/api/dashboard`, {headers:authenticatedHeaders})).json();
+    assert.deepEqual(afterPayment.outstanding, dashboard.outstanding);
+    assert.equal(afterPayment.activeRepairs, dashboard.activeRepairs);
 
     const recentRepair = dashboard.recentRepairs[0];
     assert.deepEqual(recentRepair.machine, {
@@ -206,6 +223,7 @@ test("protege y calcula correctamente el dashboard", async () => {
       },
     });
   } finally {
+    if (debtFixture) await debtFixture.cleanup();
     await prisma.repairOrder.deleteMany({
       where: { id: { in: repairIds } },
     });

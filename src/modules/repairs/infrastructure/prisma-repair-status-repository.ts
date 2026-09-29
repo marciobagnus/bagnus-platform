@@ -1,34 +1,17 @@
 import { randomUUID } from "node:crypto";
-
+import type { Payment } from "../../payments/domain/payment.ts";
+import { calculateRepairAccount, assertRepairPaymentAllowed } from "../../payments/domain/repair-account.ts";
 import type { RepairStatus } from "../domain/repair-order.ts";
 import type { RepairStatusChange } from "../domain/change-repair-status.ts";
-import type { RepairStatusRepository } from "../application/repair-status-repository.ts";
-
-import { RepairStatusConflictError } from "../application/update-repair-status.ts";
+import { RepairStatusConflictError, type RepairStatusRepository } from "../application/repair-status-repository.ts";
 import { RepairActionConflictError } from "../application/process-repair-action.ts";
-
-import {
-  determineRepairAmountDue,
-  type RepairBillingSituation,
-} from "../../payments/domain/repair-amount-due.ts";
-
-import {
-  calculateRepairBalance,
-} from "../../payments/domain/repair-balance.ts";
-
 import { prisma } from "../../../lib/prisma.ts";
 
-export class PrismaRepairStatusRepository
-  implements RepairStatusRepository {
-
-  async findCurrentStatus(
-    repairId: string,
-  ): Promise<RepairStatus | null> {
+export class PrismaRepairStatusRepository implements RepairStatusRepository {
+  async findCurrentStatus(repairId: string): Promise<RepairStatus | null> {
     const repair = await prisma.repairOrder.findUnique({
-      where: { id: repairId },
-      select: { status: true },
+      where: { id: repairId }, select: { status: true },
     });
-
     return repair?.status ?? null;
   }
 
@@ -37,135 +20,51 @@ export class PrismaRepairStatusRepository
     expectedStatus: RepairStatus,
     change: RepairStatusChange,
     changedByUserId?: string | null,
+    payment?: Payment | null,
   ): Promise<void> {
+    const finishing = expectedStatus === "IN_REPAIR" && change.toStatus === "READY_FOR_PICKUP";
+    const delivering = expectedStatus === "READY_FOR_PICKUP" && change.toStatus === "DELIVERED";
+    if (!finishing && !delivering) {
+      throw new RepairActionConflictError("Usá la operación correspondiente del taller.");
+    }
+
     await prisma.$transaction(async (tx) => {
-      // Actualizar primero bloquea la fila de la reparación.
-      // Los cobros transaccionales también bloquean esa fila.
-      const result = await tx.repairOrder.updateMany({
-        where: {
-          id: repairId,
-          status: expectedStatus,
-        },
+      // All financial writers lock this same order before reading its account.
+      await tx.$queryRaw`SELECT id FROM repair_orders WHERE id = ${repairId}::uuid FOR UPDATE`;
+      const repair = await tx.repairOrder.findUnique({
+        where: { id: repairId }, include: { quotes: true, payments: true },
+      });
+      if (!repair || repair.status !== expectedStatus) throw new RepairStatusConflictError();
+      if (!calculateRepairAccount(repair).billingResolved) {
+        throw new RepairActionConflictError("El presupuesto o la resolución no son consistentes con la operación.");
+      }
+
+      if (payment) {
+        if (!delivering || payment.repairOrderId !== repairId) {
+          throw new RepairActionConflictError("El pago no corresponde a esta entrega.");
+        }
+        try {
+          assertRepairPaymentAllowed(repair, payment.amount);
+        } catch (error) {
+          throw new RepairActionConflictError(error instanceof Error ? error.message : "Pago inválido.");
+        }
+        await tx.payment.create({ data: { ...payment, recordedByUserId: changedByUserId ?? null } });
+      }
+
+      await tx.repairOrder.update({
+        where: { id: repairId },
         data: {
           status: change.toStatus,
+          resolution: finishing ? "REPAIRED" : repair.resolution,
+          ...(delivering ? { deliveredAt: change.changedAt } : {}),
           updatedAt: change.changedAt,
         },
       });
-
-      if (result.count !== 1) {
-        throw new RepairStatusConflictError();
-      }
-
-      const isHandover =
-        change.toStatus === "DELIVERED" ||
-        change.toStatus === "CANCELLED";
-
-      if (isHandover) {
-        const repair = await tx.repairOrder.findUniqueOrThrow({
-          where: { id: repairId },
-          select: {
-            quotes: {
-              where: {
-                status: { in: ["APPROVED", "REJECTED"] },
-              },
-              select: {
-                status: true,
-                totalAmount: true,
-              },
-              orderBy: {
-                version: "desc",
-              },
-            },
-            diagnosisCharge: {
-              select: {
-                decision: true,
-                amount: true,
-              },
-            },
-            payments: {
-              select: {
-                amount: true,
-              },
-            },
-          },
-        });
-
-        let situation: RepairBillingSituation = {
-          kind: "PENDING_DECISION",
-        };
-
-        if (expectedStatus === "READY_FOR_PICKUP") {
-          const approvedQuote = repair.quotes.find(
-            (quote) => quote.status === "APPROVED",
-          );
-
-          if (approvedQuote) {
-            situation = {
-              kind: "REPAIR_APPROVED",
-              approvedQuoteAmount:
-                approvedQuote.totalAmount.toFixed(2),
-            };
-          }
-        }
-
-        if (expectedStatus === "AWAITING_PICKUP_UNREPAIRED") {
-          const rejectedQuote = repair.quotes.some(
-            (quote) => quote.status === "REJECTED",
-          );
-
-          if (rejectedQuote) {
-            if (repair.diagnosisCharge?.decision === "CHARGED") {
-              situation = {
-                kind: "REPAIR_REJECTED_DIAGNOSIS_CHARGED",
-                diagnosisAmount:
-                  repair.diagnosisCharge.amount.toFixed(2),
-              };
-            }
-
-            if (repair.diagnosisCharge?.decision === "WAIVED") {
-              situation = {
-                kind: "REPAIR_REJECTED_DIAGNOSIS_WAIVED",
-              };
-            }
-          }
-        }
-
-        const amountDue = determineRepairAmountDue(situation);
-
-        if (
-          amountDue.status === "PENDING" ||
-          amountDue.totalAmount === null
-        ) {
-          throw new RepairActionConflictError(
-            "No se puede entregar la máquina: el importe a cobrar todavía no está determinado.",
-          );
-        }
-
-        const balance = calculateRepairBalance({
-          totalAmount: amountDue.totalAmount,
-          payments: repair.payments.map(
-            (payment) => payment.amount.toFixed(2),
-          ),
-        });
-
-        if (balance.outstandingAmount !== "0.00") {
-          throw new RepairActionConflictError(
-            `No se puede entregar la máquina: queda un saldo pendiente de ARS ${balance.outstandingAmount}.`,
-          );
-        }
-      }
-
-      // Este historial se guarda únicamente si toda
-      // la transacción, incluida la validación, tiene éxito.
       await tx.repairStatusHistory.create({
         data: {
-          id: randomUUID(),
-          repairOrderId: repairId,
-          fromStatus: change.fromStatus,
-          toStatus: change.toStatus,
-          note: change.note,
-          changedAt: change.changedAt,
-          changedByUserId: changedByUserId ?? null,
+          id: randomUUID(), repairOrderId: repairId,
+          fromStatus: expectedStatus, toStatus: change.toStatus, note: change.note,
+          changedAt: change.changedAt, changedByUserId: changedByUserId ?? null,
         },
       });
     });

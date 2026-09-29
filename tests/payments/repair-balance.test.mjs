@@ -31,7 +31,7 @@ test("descuenta varios pagos parciales del presupuesto", () => {
   assert.equal(balance.creditAmount, "0.00");
 });
 
-test("considera un diagnóstico ya pagado como pago a cuenta", () => {
+test("considera un pago previo como pago a cuenta", () => {
   const balance = calculateRepairBalance({
     totalAmount: "50000.00",
     payments: ["5000.00"],
