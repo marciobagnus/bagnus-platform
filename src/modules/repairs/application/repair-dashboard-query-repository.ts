@@ -1,3 +1,4 @@
+import type { OutstandingRepairsSummary } from "./outstanding-repairs.ts";
 import type { RepairStatus } from "../domain/repair-order.ts";
 
 export const FINAL_REPAIR_STATUSES: RepairStatus[] = [
@@ -25,6 +26,7 @@ export type RepairDashboardItem = {
 
 export type RepairDashboard = {
   activeRepairs: number;
+  outstanding: OutstandingRepairsSummary;
   waitingApproval: number;
   readyForPickup: number;
   recentRepairs: RepairDashboardItem[];

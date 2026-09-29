@@ -23,13 +23,23 @@
   gap: 16px;
 }
 
-.cards article {
+.cards article,
+.balanceCard {
   display: grid;
   gap: 14px;
   padding: 20px;
   border: 1px solid #e4e7ec;
   border-radius: 12px;
   background: white;
+}
+
+.balanceCard:hover {
+  border-color: #667085;
+}
+
+.balanceCard:focus-visible {
+  outline: 3px solid #667085;
+  outline-offset: 3px;
 }
 
 .cards span {

@@ -3,7 +3,9 @@ export type OutstandingRepair = {
   status: string; resolution: string | null; total: string; paid: string; balance: string;
   deliveredAt: Date | null;
 };
+export type OutstandingRepairsSummary = { orderCount: number; totalBalance: string };
 export interface OutstandingRepairsRepository {
+  getOutstandingSummary(): Promise<OutstandingRepairsSummary>;
   findOutstanding(limit: number, offset: number): Promise<OutstandingRepair[]>;
 }
 export async function getOutstandingRepairs(repository: OutstandingRepairsRepository, page = 1) {

@@ -1,3 +1,4 @@
+import { PrismaOutstandingRepairsRepository } from "../../../modules/repairs/infrastructure/prisma-outstanding-repairs-repository.ts";
 import { NextResponse } from "next/server";
 
 import {
@@ -26,7 +27,7 @@ export async function GET() {
     const repository =
       new PrismaRepairDashboardQueryRepository();
 
-    const dashboard = await getRepairDashboard(repository);
+    const dashboard = await getRepairDashboard(repository, new PrismaOutstandingRepairsRepository());
 
     return NextResponse.json(dashboard, { status: 200 });
   } catch (error) {

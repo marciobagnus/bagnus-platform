@@ -35,6 +35,7 @@ type DashboardRepair = {
 
 type DashboardData = {
   activeRepairs: number;
+  outstanding: { orderCount: number; totalBalance: string };
   waitingApproval: number;
   readyForPickup: number;
   recentRepairs: DashboardRepair[];
@@ -123,6 +124,14 @@ export default function DashboardPage() {
           <span>Listas para entregar</span>
           <strong>{dashboard?.readyForPickup ?? "-"}</strong>
         </article>
+
+        <Link href="/reparaciones/saldos" className={styles.balanceCard}>
+          <span>Saldos pendientes</span>
+          <strong>{dashboard?.outstanding.orderCount ?? "-"}</strong>
+          <span>{dashboard
+            ? new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(Number(dashboard.outstanding.totalBalance))
+            : "-"} por cobrar</span>
+        </Link>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}

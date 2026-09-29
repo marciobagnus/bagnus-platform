@@ -26,10 +26,11 @@ test("calcula las métricas y limita los trabajos recientes", async () => {
     },
   };
 
-  const dashboard = await getRepairDashboard(repository);
+  const dashboard = await getRepairDashboard(repository, { async getOutstandingSummary() { return {orderCount:3,totalBalance:"80000.50"}; } });
 
   assert.deepEqual(dashboard, {
     activeRepairs: 4,
+    outstanding: {orderCount:3,totalBalance:"80000.50"},
     waitingApproval: 1,
     readyForPickup: 1,
     recentRepairs: [{ id: "recent-repair" }],
@@ -39,4 +40,12 @@ test("calcula las métricas y limita los trabajos recientes", async () => {
     "WAITING_APPROVAL",
     "READY_FOR_PICKUP",
   ]);
+});
+
+test("la cobranza permanece visible aunque no haya trabajos activos", async () => {
+  const dashboard = await getRepairDashboard({
+    async countActiveRepairs(){return 0;}, async countByStatus(){return 0;}, async findRecentActive(){return [];},
+  }, {async getOutstandingSummary(){return {orderCount:2,totalBalance:"15000.25"};}});
+  assert.equal(dashboard.activeRepairs,0);
+  assert.deepEqual(dashboard.outstanding,{orderCount:2,totalBalance:"15000.25"});
 });
