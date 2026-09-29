@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 
 import styles from "./repair-detail.module.css";
+import { QuoteWhatsAppEditor } from "./quote-whatsapp-editor";
 import {
   getRepairStatusLabel,
   type RepairStatus,
@@ -164,6 +165,7 @@ export default function RepairDetailPage({
   const [actionError, setActionError] = useState("");
   const [actionLoading, setActionLoading] = useState("");
   const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteWhatsAppMessage, setQuoteWhatsAppMessage] = useState<string | null>(null);
   const [quoteDescription, setQuoteDescription] = useState("");
   const [quoteAmount, setQuoteAmount] = useState("");
   const [showDecisionForm, setShowDecisionForm] = useState(false);
@@ -379,7 +381,7 @@ export default function RepairDetailPage({
   };
   const quoteWhatsAppLink = buildWhatsAppLink(
     customer.phone,
-    buildQuoteWhatsAppMessage(whatsappData),
+    "",
   );
   const finishedWhatsAppLink = buildWhatsAppLink(
     customer.phone,
@@ -504,18 +506,30 @@ export default function RepairDetailPage({
         {repair.status === "WAITING_APPROVAL" && currentQuote && (
           <div className={styles.actionStack}>
             {quoteWhatsAppLink ? (
-              <a
+              <button
                 className={styles.whatsappButton}
-                href={quoteWhatsAppLink}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
+                onClick={() => setQuoteWhatsAppMessage(buildQuoteWhatsAppMessage({
+                  ...whatsappData,
+                  description: currentQuote.description,
+                  totalAmount: currentQuote.totalAmount,
+                  currency: currentQuote.currency,
+                }))}
               >
-                Enviar aviso por WhatsApp
-              </a>
+                Enviar presupuesto por WhatsApp
+              </button>
             ) : (
               <p className={styles.whatsappHint}>
                 El teléfono no es un celular argentino válido para WhatsApp. Editá la ficha del cliente e ingresá código de área y número celular.
               </p>
+            )}
+            {quoteWhatsAppMessage !== null && (
+              <QuoteWhatsAppEditor
+                phone={customer.phone}
+                message={quoteWhatsAppMessage}
+                onChange={setQuoteWhatsAppMessage}
+                onCancel={() => setQuoteWhatsAppMessage(null)}
+              />
             )}
             <button
               className={styles.primaryButton}

@@ -35,13 +35,17 @@ export function normalizeWhatsAppPhone(phone: string): string | null {
 }
 
 export function buildQuoteWhatsAppMessage(
-  data: WhatsAppMessageData,
+  data: WhatsAppMessageData & { description: string; totalAmount: string; currency: string },
 ): string {
   const machineName = [data.brand, data.model]
     .filter(Boolean)
     .join(" ");
 
-  return `Hola, ${data.customerName}. Te escribimos de Máquinas Bagnus para avisarte que ya tenemos listo el presupuesto de reparación de tu máquina ${machineName}.\n\nQuedamos a la espera de tu confirmación para continuar con el trabajo.\n\nMuchas gracias.`;
+  const amount = new Intl.NumberFormat("es-AR", {
+    style: "currency", currency: data.currency,
+  }).format(Number(data.totalAmount));
+
+  return `Hola, ${data.customerName}. Te escribimos de Máquinas Bagnus. El costo de la reparación de tu máquina ${machineName} es de ${amount}.\n\nEl presupuesto incluye: ${data.description}\n\nSi aceptás el presupuesto, avisame y coordinamos para qué día estaría lista.`;
 }
 
 export function buildFinishedRepairWhatsAppMessage(
